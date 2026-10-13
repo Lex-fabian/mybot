@@ -4,7 +4,7 @@
 =============================================================================
  Maneja la conexión con TikTok Live, cola de voz prioritaria, Edge TTS,
  SAPI5 de Windows, parada instantánea de audio y filtros anti-spam,
- comunicándose en tiempo real con el frontend de Electron.
+ comunicándose en tiempo real con la interfaz de la aplicación.
 =============================================================================
 """
 
@@ -32,25 +32,65 @@ if sys.stderr and hasattr(sys.stderr, "reconfigure"):
         pass
 
 from aiohttp import web
-from TikTokLive import TikTokLiveClient
-from TikTokLive.client.errors import (
-    AgeRestrictedError,
-    SignAPIError,
-    UserNotFoundError,
-    UserOfflineError,
-    WebcastBlockedError,
-)
-from TikTokLive.client.web.routes.fetch_user_unique_id import FailedResolveUserId
-from TikTokLive.events import CommentEvent, ConnectEvent, DisconnectEvent, GiftEvent
-try:
-    from TikTokLive.events import JoinEvent
-except ImportError:
-    JoinEvent = None
+
+# La libreria de TikTokLive se carga de forma diferida (ver _cargar_tiktoklive):
+# arrastra protobuf, httpx y otros modulos pesados que retrasaban varios segundos
+# la apertura de la ventana, y solo se necesitan al conectar con un directo.
+TikTokLiveClient = None
+CommentEvent = ConnectEvent = DisconnectEvent = GiftEvent = None
+JoinEvent = None
+AgeRestrictedError = SignAPIError = UserNotFoundError = None
+UserOfflineError = WebcastBlockedError = FailedResolveUserId = None
+_tiktoklive_cargado = False
+
+
+def _cargar_tiktoklive() -> None:
+    """Importa TikTokLive la primera vez que se necesita (al conectar)."""
+    global TikTokLiveClient, CommentEvent, ConnectEvent, DisconnectEvent
+    global GiftEvent, JoinEvent, AgeRestrictedError, SignAPIError
+    global UserNotFoundError, UserOfflineError, WebcastBlockedError
+    global FailedResolveUserId, _tiktoklive_cargado
+
+    if _tiktoklive_cargado:
+        return
+
+    from TikTokLive import TikTokLiveClient as cliente_cls
+    from TikTokLive.client.errors import AgeRestrictedError as err_edad
+    from TikTokLive.client.errors import SignAPIError as err_firma
+    from TikTokLive.client.errors import UserNotFoundError as err_usuario
+    from TikTokLive.client.errors import UserOfflineError as err_offline
+    from TikTokLive.client.errors import WebcastBlockedError as err_bloqueo
+    from TikTokLive.client.web.routes.fetch_user_unique_id import FailedResolveUserId as err_resolver
+    from TikTokLive.events import CommentEvent as evento_comentario
+    from TikTokLive.events import ConnectEvent as evento_conectar
+    from TikTokLive.events import DisconnectEvent as evento_desconectar
+    from TikTokLive.events import GiftEvent as evento_regalo
+
+    try:
+        from TikTokLive.events import JoinEvent as evento_unirse
+    except ImportError:
+        evento_unirse = None
+
+    TikTokLiveClient = cliente_cls
+    CommentEvent, ConnectEvent = evento_comentario, evento_conectar
+    DisconnectEvent, GiftEvent = evento_desconectar, evento_regalo
+    JoinEvent = evento_unirse
+    AgeRestrictedError, SignAPIError = err_edad, err_firma
+    UserNotFoundError, UserOfflineError = err_usuario, err_offline
+    WebcastBlockedError, FailedResolveUserId = err_bloqueo, err_resolver
+    _tiktoklive_cargado = True
+
 
 import audio_assets
 import tts_voces
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    # Empaquetado con PyInstaller: los recursos viven junto al ejecutable, no en
+    # el directorio temporal (_MEIPASS), que se borra al cerrar la aplicación.
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 WEB_DIR = os.path.join(BASE_DIR, "web")
 PORT = 58421
 
@@ -82,7 +122,7 @@ def _resolver_archivo_config() -> str:
 
 CONFIG_FILE = _resolver_archivo_config()
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 USER_AGENT = f"MyBot-Desktop-App/{APP_VERSION}"
 
 # Voces Neurales Edge TTS
@@ -307,6 +347,11 @@ def normalizar_comentario(comentario: str, filtrar_links: bool = True, compactar
 
 
 def mensaje_error_conexion(exc: Exception) -> str:
+    try:
+        _cargar_tiktoklive()
+    except Exception:  # noqa: BLE001
+        return str(exc)
+
     if isinstance(exc, UserOfflineError):
         return "El usuario no está en directo en este momento."
     if isinstance(exc, UserNotFoundError):
@@ -550,6 +595,16 @@ class MyBotService:
     def _hilo_cliente_loop(self, usuario: str):
         reintentos = 0
         max_reintentos = 15
+
+        # TikTokLive se importa aqui (no al arrancar) para que la ventana abra rapido.
+        self.emit_ws("tts_estado", {"state": "cargando", "detail": "Preparando el motor de TikTok..."})
+        try:
+            _cargar_tiktoklive()
+        except Exception as e:  # noqa: BLE001
+            self.emit_ws("estado", {"text": "Error al cargar TikTokLive", "status": "red"})
+            self.emit_ws("err", {"message": f"No se pudo cargar la libreria de TikTokLive: {e}"})
+            self._debe_correr = False
+            return
 
         while self._debe_correr:
             try:
@@ -860,7 +915,7 @@ class MyBotService:
 
             self._descarga_activa = True
             temp_dir = tempfile.gettempdir()
-            filename = url.split("/")[-1].split("?")[0] or "MyBot_v1.2_Instalador.exe"
+            filename = url.split("/")[-1].split("?")[0] or "MyBot_v1.3_Instalador.exe"
             destino = os.path.join(temp_dir, filename)
             hash_archivo = hashlib.sha256()
 
@@ -1546,12 +1601,38 @@ def limpiar_temporales_antiguos():
         pass
 
 
-def iniciar_servidor():
-    global service
+_loop_servidor = None
+
+
+def servidor_activo(puerto: int = PORT) -> bool:
+    """Comprueba si ya hay una instancia de MyBot escuchando en el puerto."""
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.4)
+        return s.connect_ex(("127.0.0.1", puerto)) == 0
+
+
+def detener_servidor():
+    """Detiene el bucle de eventos del servidor desde otro hilo."""
+    global _loop_servidor
+    if _loop_servidor is not None and _loop_servidor.is_running():
+        _loop_servidor.call_soon_threadsafe(_loop_servidor.stop)
+
+
+def iniciar_servidor(bloquear: bool = True):
+    """Arranca el servidor HTTP/WebSocket en 127.0.0.1.
+
+    bloquear=True (por defecto) mantiene el hilo actual en el bucle de eventos,
+    que es lo que espera 'python mybot_backend.py'. La aplicación de escritorio
+    (mybot_app.py) lo llama en un hilo con bloquear=False.
+    """
+    global service, _loop_servidor
     limpiar_temporales_antiguos()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     service = MyBotService(loop)
+    _loop_servidor = loop
 
     app = web.Application()
     app.router.add_get("/", index_handler)
@@ -1566,10 +1647,15 @@ def iniciar_servidor():
     print(f"[MyBot Server] Servidor activo en http://127.0.0.1:{PORT}")
     sys.stdout.flush()
 
+    if not bloquear:
+        return loop
+
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        _loop_servidor = None
 
 
 if __name__ == "__main__":

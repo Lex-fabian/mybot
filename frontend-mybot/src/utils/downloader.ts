@@ -26,7 +26,7 @@ export async function iniciarDescargaGlobal(
   downloadDetail.value = 'Conectando con el servidor...'
   isCompleted.value = false
 
-  const fileUrl = '/downloads/MyBot_v1.2_Instalador.exe'
+  const fileUrl = '/downloads/MyBot_v1.3_Instalador.exe'
   const fileName = 'MyBot_v1.2_Instalador.exe'
 
   try {

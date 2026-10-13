@@ -23,7 +23,7 @@
   };
 
   // Versión de esta aplicación y servidor de actualizaciones
-  const VERSION_ACTUAL = "1.2.0";
+  const VERSION_ACTUAL = "1.3.0";
   const UPDATE_URL = "https://mybot-79861.web.app/version.json";
 
   function parsearVersion(v) {
@@ -333,6 +333,18 @@
     } else {
       showToast("Sin conexión con el servidor de MyBot");
     }
+  }
+
+  // Abre un enlace en el navegador del sistema. Dentro de la aplicación de
+  // escritorio se usa el puente de pywebview (window.pywebview.api); si la
+  // interfaz se abre en un navegador normal, se abre una pestaña nueva.
+  function abrirEnlaceExterno(url) {
+    const api = window.pywebview && window.pywebview.api;
+    if (api && typeof api.open_external === "function") {
+      api.open_external(String(url));
+      return;
+    }
+    window.open(url, "_blank");
   }
 
   /* ==========================================================================
@@ -1138,13 +1150,7 @@
       link.addEventListener("click", (e) => {
         e.preventDefault();
         const url = link.getAttribute("href");
-        if (url) {
-          if (window.electronAPI && window.electronAPI.openExternal) {
-            window.electronAPI.openExternal(url);
-          } else {
-            window.open(url, "_blank");
-          }
-        }
+        if (url) abrirEnlaceExterno(url);
       });
     });
 
@@ -1161,7 +1167,7 @@
       });
       dom.btnDownloadUpdate.addEventListener("click", () => {
         const url = (state.updateInfo && state.updateInfo.download_url)
-          || "https://mybot-79861.web.app/downloads/MyBot_v1.2_Instalador.exe";
+          || "https://mybot-79861.web.app/downloads/MyBot_v1.3_Instalador.exe";
         dom.btnDownloadUpdate.disabled = true;
         dom.btnDownloadUpdate.textContent = "⏳ Descargando en la app...";
         if (dom.updateProgressBox) {

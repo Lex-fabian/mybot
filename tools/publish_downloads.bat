@@ -12,11 +12,11 @@ if not exist "dist_installer\MyBot_v*_Instalador.exe" (
   echo [ERROR] No existe ningun instalador en dist_installer
   exit /b 1
 )
-for %%F in ("dist_installer\MyBot_v*_Instalador.exe") do copy /Y "%%~F" "%DEST%\" >nul
 
-if exist "dist\MyBot.exe" (
-  copy /Y "dist\MyBot.exe" "%DEST%\MyBot.exe" >nul
-)
+REM Solo se publica el instalador: la aplicacion es una carpeta (PyInstaller
+REM onedir) y no existe un unico .exe portable que copiar.
+del /q "%DEST%\*.exe" 2>nul
+for %%F in ("dist_installer\MyBot_v*_Instalador.exe") do copy /Y "%%~F" "%DEST%\" >nul
 
 echo == Contenido de %DEST% ==
 dir /b "%DEST%"

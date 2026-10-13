@@ -8,11 +8,9 @@ build/
 dist/
 *.exe
 
-# Node / Electron
+# Node (solo para la landing page de frontend-mybot)
 node_modules/
 npm-debug.log
-yarn-error.log
-pnpm-debug.log
 
 # Voces neuronales: se descargan desde la app, no se versionan (varios cientos de MB)
 assets/voices/
@@ -20,7 +18,7 @@ assets/descargas_audio/
 
 # Binarios publicados y respaldos locales
 frontend-mybot/public/downloads/
-voices_backup/
+frontend-mybot/dist/
 *_backup/
 
 # Environment / Temp

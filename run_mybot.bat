@@ -1,5 +1,9 @@
 @echo off
-title MyBot - TikTok Live TTS ^& Donaciones Pro
+REM ===========================================================================
+REM  MyBot - Lanzador de desarrollo (ejecuta la aplicacion desde el codigo fuente)
+REM  Para la version distribuible usa el instalador o dist\MyBot.exe.
+REM ===========================================================================
+title MyBot - TikTok Live TTS y Donaciones Pro
 cd /d "%~dp0"
 
 echo ============================================================
@@ -7,16 +11,7 @@ echo   MyBot - Lector de Comentarios y Donaciones TikTok Live
 echo ============================================================
 echo.
 
-where node >nul 2>nul
-if errorlevel 1 (
-  echo [ERROR] Node.js no esta instalado o no esta en el PATH.
-  echo         Descargalo en https://nodejs.org/ ^(version LTS^)
-  echo.
-  pause
-  exit /b 1
-)
-
-REM --- Localizar un Python REAL (el alias de la Microsoft Store no sirve) ---
+REM --- Localizar un Python real (el alias de la Microsoft Store no sirve) ---
 set "PYEXE="
 python -c "import sys; print(1)" >nul 2>nul
 if not errorlevel 1 set "PYEXE=python"
@@ -30,10 +25,9 @@ if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.e
 if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
 
 if not defined PYEXE (
-  echo [ERROR] No se encontro un Python 3.10+ funcional.
-  echo         El alias de la Microsoft Store no sirve.
-  echo         Instala Python desde https://www.python.org/downloads/
-  echo         y marca "Add python.exe to PATH".
+  echo [ERROR] No se encontro un Python 3.10 o superior funcional.
+  echo         Instalalo desde https://www.python.org/downloads/ y marca
+  echo         "Add python.exe to PATH" durante la instalacion.
   echo.
   pause
   exit /b 1
@@ -42,28 +36,17 @@ if not defined PYEXE (
 echo Python detectado: %PYEXE%
 echo.
 
-if not exist "node_modules\electron" (
-  echo Instalando dependencias de Node.js ^(primera ejecucion^)...
-  call npm install
-  if errorlevel 1 (
-    echo [ERROR] Fallo al instalar dependencias de Node.js.
-    pause
-    exit /b 1
-  )
-)
-
-echo Comprobando dependencias de Python...
-%PYEXE% -c "import TikTokLive, edge_tts, pyttsx3" >nul 2>nul
+REM --- Dependencias de Python (solo en la primera ejecucion) ---
+%PYEXE% -c "import TikTokLive, aiohttp, webview" >nul 2>nul
 if errorlevel 1 (
   echo Instalando dependencias de Python ^(primera ejecucion^)...
   %PYEXE% -m pip install -r requirements.txt
   if errorlevel 1 (
-    echo [ERROR] Fallo al instalar dependencias de Python.
+    echo [ERROR] Fallo al instalar las dependencias de Python.
     pause
     exit /b 1
   )
 )
 
-echo Iniciando MyBot Desktop App...
-call npm start
-
+echo Iniciando MyBot...
+%PYEXE% mybot_app.py

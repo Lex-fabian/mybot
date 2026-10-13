@@ -3,8 +3,9 @@
  MyBot — Catálogo y descarga de voces neuronales offline (Piper)
 =============================================================================
  Fuente única de verdad para las voces neuronales: qué voces existen, cuáles
- están ya instaladas y cómo descargarlas. Lo usan tanto el backend (app
- Electron) como la GUI clásica de Tkinter, para no duplicar la lista.
+ están ya instaladas y cómo descargarlas. Lo usan tanto el servidor de la
+ aplicación (mybot_backend) como cualquier otro consumidor, para no duplicar
+ la lista.
 
  Los modelos .onnx NO se empaquetan en el instalador (ahorran ~270 MB): se
  descargan desde la app, desde el repositorio oficial rhasspy/piper-voices.
@@ -15,7 +16,7 @@ import os
 import time
 import urllib.request
 
-USER_AGENT = "MyBot-Desktop-App/1.2.0"
+USER_AGENT = "MyBot-Desktop-App/1.3.0"
 PIPER_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main/es"
 BLOQUE = 256 * 1024
 
