@@ -1,0 +1,22 @@
+{
+  "name": "mybot",
+  "version": "1.2.0",
+  "description": "MyBot - TikTok Live TTS & Donaciones Pro (Desktop Edition)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "server": "python mybot_backend.py"
+  },
+  "keywords": [
+    "tiktok",
+    "live",
+    "tts",
+    "desktop",
+    "ios"
+  ],
+  "author": "MyBot Team",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^41.2.0"
+  }
+}

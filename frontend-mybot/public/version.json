@@ -1,0 +1,15 @@
+{
+  "version": "1.2.0",
+  "version_name": "v1.2",
+  "min_required_version": "1.0.0",
+  "download_url": "https://mybot-79861.web.app/downloads/MyBot_v1.2_Instalador.exe",
+  "sha256": "FFD1306773DA7FCE5AC74037601A90AFAB72B6509820A7AFDD893F9112E2EF55",
+  "size_bytes": 101522201,
+  "checksums": {
+    "MyBot.exe": "9E6561D3349FE8CD5FE8B711FA0DFF3CF464BC5EFF164C7C68170BB894DD1ED7",
+    "MyBot_v1.2_Instalador.exe": "FFD1306773DA7FCE5AC74037601A90AFAB72B6509820A7AFDD893F9112E2EF55"
+  },
+  "changelog": "Versión 1.2: Voces neuronales Piper descargables desde la propia app (instalador un 70% más ligero), motor Piper por defecto sin depender de la nube, integración multimedia para YouTube Music en donaciones, aceleración dinámica anti-lag y bienvenida a espectadores.",
+  "release_date": "2026-10-13",
+  "author": "i.am.lex"
+}

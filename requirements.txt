@@ -1,0 +1,16 @@
+# Dependencias de MyBot - TikTok Live TTS + Donaciones Pro
+# Instala con: pip install -r requirements.txt
+TikTokLive>=7.0.1      # Conexión con el directo de TikTok
+
+# --- Voces ---
+piper-tts>=1.2.0       # MOTOR RECOMENDADO: voz neuronal LOCAL (offline), sin Internet ni error 403
+numpy>=1.24.0          # Remuestreo de tono de las voces Piper
+pyttsx3>=2.90          # Motor SAPI5 de Windows (voz del sistema)
+pywin32>=306           # API nativa SAPI.SpVoice (necesaria para el motor SAPI5 en Windows)
+
+# --- Motores opcionales en la nube (Edge TTS se bloquea con error 403 en algunas redes) ---
+edge-tts>=6.0.0        # Voz neural "Edge TTS" (Microsoft), opcional
+gTTS>=2.5.0            # Voz alternativa online (Google), respaldo
+
+# --- Interfaz ---
+pillow>=10.0.0         # Iconos en alta definición de la GUI de respaldo (Tkinter)

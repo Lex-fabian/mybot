@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+!MyBot.spec
+build/
+dist/
+*.exe
+
+# Node / Electron
+node_modules/
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Voces neuronales: se descargan desde la app, no se versionan (varios cientos de MB)
+assets/voices/
+assets/descargas_audio/
+
+# Binarios publicados y respaldos locales
+frontend-mybot/public/downloads/
+voices_backup/
+*_backup/
+
+# Environment / Temp
+.env
+.idea/
+.vscode/
+scratch/
+temp_*.mp3
+output_*.mp3
+cache/

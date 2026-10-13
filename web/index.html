@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBot — TikTok Live TTS & Donaciones Pro</title>
+  <link rel="icon" type="image/png" href="icono.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <!-- PANTALLA DE CARGA (SPLASH SCREEN iOS) -->
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-card">
+      <div class="splash-icon-wrapper">
+        <canvas id="splashLogoCanvas" width="180" height="180" class="splash-canvas"></canvas>
+        <div class="splash-glow"></div>
+      </div>
+      <h1 class="splash-title">MyBot</h1>
+      <p class="splash-subtitle">TikTok Live TTS & Donaciones Pro</p>
+      <p class="splash-creator">Desarrollado por <strong>i.am.lex</strong></p>
+
+      <div class="splash-progress-track">
+        <div id="splashProgressBar" class="splash-progress-bar"></div>
+      </div>
+      <p id="splashStatusText" class="splash-status-text">Iniciando sistema...</p>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL DE LA APLICACIÓN -->
+  <div class="app-layout">
+    <main class="app-window">
+
+      <!-- CABECERA BRANDING iOS -->
+      <header class="ios-header">
+        <div class="header-left">
+          <div class="app-icon-squircle">
+            <img src="icono.png" alt="MyBot Logo">
+          </div>
+          <div class="app-titles">
+            <div class="brand-row">
+              <span class="app-brand-name">MyBot</span>
+              <span class="app-badge-version">v3.2 Pro</span>
+            </div>
+            <span class="app-brand-desc">Lector de Comentarios & Donaciones con Voz</span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <button id="btnCheckUpdate" class="btn btn-secondary btn-sm" title="Buscar actualizaciones de MyBot">
+            <span>🔄</span>
+            <span class="btn-text">Actualizar</span>
+          </button>
+          <button id="btnOpenBinance" class="btn btn-binance btn-sm" title="Donar por Binance al proyecto">
+            <span>💛</span>
+            <span class="btn-text">Donar</span>
+          </button>
+          <div id="topTtsStatus" class="ios-pill pill-celeste">
+            <span class="pill-dot dot-green"></span>
+            <span id="topTtsStatusText">Voz: Lista</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- TARJETA DE CONEXIÓN RÁPIDA -->
+      <section class="ios-card connection-card">
+        <div class="connection-row">
+          <div class="input-with-label">
+            <label for="tiktokUser">Usuario o Enlace de TikTok Live</label>
+            <div class="input-wrapper">
+              <span class="input-prefix">@</span>
+              <input type="text" id="tiktokUser" placeholder="ejemplo: l.am.lex_ o https://www.tiktok.com/@.../live" autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+          <div class="connection-actions">
+            <button id="btnConnect" class="btn btn-primary">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">Conectar</span>
+            </button>
+            <button id="btnDisconnect" class="btn btn-danger" disabled>
+              <span class="btn-text">Desconectar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PILLS DE ESTADO Y MÉTRICAS EN VIVO -->
+        <div class="metrics-row">
+          <div id="connStatusPill" class="metric-pill pill-status-disconnected">
+            <span class="status-indicator"></span>
+            <span id="connStatusText">Desconectado</span>
+          </div>
+          <div class="metrics-counters">
+            <div class="metric-pill pill-subtle">
+              <span class="counter-icon">💬</span>
+              <span id="statComments">0</span> comentarios
+            </div>
+            <div class="metric-pill pill-warning">
+              <span class="counter-icon">🎁</span>
+              <span id="statGifts">0</span> regalos
+            </div>
+            <div class="metric-pill pill-diamonds">
+              <span class="counter-icon">💎</span>
+              <span id="statDiamonds">0</span> diamantes
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BARRA DE PESTAÑAS (SEGMENTED CONTROL iOS) -->
+      <nav class="segmented-control" role="tablist">
+        <button class="segment-btn active" data-tab="tabChat" role="tab">
+          <span class="segment-icon">💬</span> Chat en Vivo
+        </button>
+        <button class="segment-btn" data-tab="tabVoice" role="tab">
+          <span class="segment-icon">🎙️</span> Voz & Presets
+        </button>
+        <button class="segment-btn" data-tab="tabDonations" role="tab">
+          <span class="segment-icon">🎁</span> Donaciones
+        </button>
+        <button class="segment-btn" data-tab="tabCommunity" role="tab">
+          <span class="segment-icon">👋</span> Bienvenidas
+        </button>
+        <button class="segment-btn" data-tab="tabFilters" role="tab">
+          <span class="segment-icon">🛡️</span> Filtros & Opciones
+        </button>
+      </nav>
+
+      <!-- CONTENIDOS DE LAS PESTAÑAS -->
+      <div class="tab-contents">
+
+        <!-- TAB 1: CHAT EN VIVO -->
+        <section id="tabChat" class="tab-pane active">
+          <div class="chat-wrapper ios-card">
+            <div id="chatFeed" class="chat-feed" role="log" aria-live="polite">
+              <div class="system-bubble">
+                <span class="bubble-icon">✨</span>
+                <span>Bienvenido a <strong>MyBot</strong>. Conéctate a una transmisión para iniciar la lectura.</span>
+              </div>
+            </div>
+
+            <div class="chat-toolbar">
+              <div class="toolbar-left">
+                <button id="btnClearChat" class="btn btn-secondary btn-sm" title="Limpiar todo el visor">
+                  🗑️ Limpiar
+                </button>
+                <button id="btnMuteAudio" class="btn btn-emergency btn-sm" title="Detener audio en reproducción inmediatamente">
+                  ⏹️ Silenciar / Parar Audio
+                </button>
+              </div>
+              <div class="toolbar-right">
+                <div class="queue-pill">
+                  <span>Cola de voz:</span>
+                  <strong id="queueCount">0</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: VOZ & PRESETS -->
+        <section id="tabVoice" class="tab-pane">
+          <div class="settings-group ios-card">
+            <h2 class="group-title">Configuración de Voz</h2>
+
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="selectEngine">Motor de Síntesis</label>
+                <select id="selectEngine" class="ios-select">
+                  <option value="piper">Piper · Recomendado (Neuronal Offline, sin Internet)</option>
+                  <option value="sapi5">SAPI5 (Local Windows - Ultra Rápido / Sin Internet)</option>
+                  <option value="edge">Edge TTS (Nube Microsoft - Opcional, requiere Internet)</option>
+                </select>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="selectVoice">Voz Principal</label>
+                <select id="selectVoice" class="ios-select"></select>
+              </div>
+
+              <!-- DESCARGA DE LA VOZ NEURONAL OFFLINE (no se incluye en el instalador) -->
+              <div id="voiceModelPanel" class="voice-model-panel" hidden>
+                <div class="voice-model-head">
+                  <span class="voice-model-icon">⬇️</span>
+                  <div class="voice-model-info">
+                    <span id="voiceModelTitle" class="voice-model-title">Esta voz aún no está descargada</span>
+                    <span id="voiceModelDesc" class="voice-model-desc"></span>
+                  </div>
+                </div>
+                <div class="voice-model-actions">
+                  <button id="btnVoiceModelDownload" class="btn btn-primary">⬇️ Descargar voz</button>
+                  <span id="voiceModelHint" class="voice-model-hint"></span>
+                </div>
+                <div id="voiceModelProgressWrap" class="voice-model-progress" hidden>
+                  <div class="voice-model-bar"><div id="voiceModelProgressBar" class="voice-model-bar-fill"></div></div>
+                  <span id="voiceModelProgressText" class="voice-model-progress-text">0%</span>
+                </div>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="selectPreset">Preset de Modulación</label>
+                <div class="preset-selector-row">
+                  <select id="selectPreset" class="ios-select"></select>
+                  <span id="presetDesc" class="preset-help-text">Voz equilibrada sin alteraciones.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- DESLIZADORES TÁCTILES iOS -->
+            <div class="sliders-section">
+              <div class="slider-row">
+                <div class="slider-info">
+                  <span class="slider-label">Tono de Voz</span>
+                  <span id="lblToneValue" class="slider-badge">0 Hz</span>
+                </div>
+                <input type="range" id="rangeTone" min="-50" max="50" value="0" class="ios-slider">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-info">
+                  <span class="slider-label">Velocidad</span>
+                  <span id="lblSpeedValue" class="slider-badge">+0%</span>
+                </div>
+                <input type="range" id="rangeSpeed" min="-50" max="100" value="0" class="ios-slider">
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-info">
+                  <span class="slider-label">Volumen</span>
+                  <span id="lblVolumeValue" class="slider-badge">100%</span>
+                </div>
+                <input type="range" id="rangeVolume" min="10" max="100" value="100" class="ios-slider">
+              </div>
+            </div>
+
+            <!-- LECTURA DE NOMBRE -->
+            <div class="toggle-group">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Leer nombre de usuario</span>
+                  <span class="switch-desc">Dice el nombre de la persona antes del comentario.</span>
+                </div>
+                <input type="checkbox" id="chkReadUsername" class="ios-switch" checked>
+              </label>
+
+              <div id="usernameFormatWrapper" class="form-field mt-3">
+                <label for="txtUserFormat">Plantilla de lectura</label>
+                <input type="text" id="txtUserFormat" value="{usuario} dice: {mensaje}" class="ios-input">
+              </div>
+            </div>
+
+            <!-- PRUEBA Y DESCARGA -->
+            <div class="test-voice-card">
+              <h3 class="sub-title">Probar y Descargar Audio</h3>
+              <div class="test-row">
+                <input type="text" id="txtTestVoice" value="¡Hola! Soy MyBot, tu asistente de voz para TikTok Live." class="ios-input test-input">
+                <button id="btnTestVoice" class="btn btn-primary">🔊 Probar Voz</button>
+                <button id="btnDownloadVoice" class="btn btn-secondary">💾 Descargar</button>
+              </div>
+              <div class="test-status-row">
+                <span id="testStatusBadge" class="ios-pill pill-celeste">● Estado: Listo</span>
+                <span id="testStatusDetail" class="text-muted">Voz lista para usar en el directo.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: DONACIONES -->
+        <section id="tabDonations" class="tab-pane">
+          <div class="settings-group ios-card">
+            <h2 class="group-title">Alertas de Donaciones y Regalos</h2>
+
+            <div class="toggle-group">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Activar avisos de regalos</span>
+                  <span class="switch-desc">Detecta y agradece regalos enviados durante la transmisión.</span>
+                </div>
+                <input type="checkbox" id="chkDonationsActive" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Avisar solo al finalizar combo / racha</span>
+                  <span class="switch-desc">Evita saturar la voz al enviar ráfagas repetidas de rosas.</span>
+                </div>
+                <input type="checkbox" id="chkWaitStreak" class="ios-switch" checked>
+              </label>
+            </div>
+
+            <div class="form-field mt-4">
+              <label for="numMinDiamonds">Mínimo de diamantes para alertar</label>
+              <div class="stepper-input">
+                <button type="button" class="btn-step" id="btnDecDiamond">-</button>
+                <input type="number" id="numMinDiamonds" min="1" max="10000" value="1" class="ios-input stepper-val">
+                <button type="button" class="btn-step" id="btnIncDiamond">+</button>
+                <span class="input-helper">diamante(s)</span>
+              </div>
+            </div>
+
+            <!-- AGRADECIMIENTO POR VOZ -->
+            <div class="inner-card mt-4">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Agradecimiento por voz</span>
+                  <span class="switch-desc">Lee el mensaje personalizado de agradecimiento en vivo.</span>
+                </div>
+                <input type="checkbox" id="chkReadDonation" class="ios-switch" checked>
+              </label>
+
+              <div class="form-field mt-3">
+                <label for="txtDonationTemplate">Plantilla de donación</label>
+                <input type="text" id="txtDonationTemplate" value="¡Muchas gracias a {usuario} por enviar {cantidad} {regalo}!" class="ios-input">
+                <span class="input-hint">Variables: {usuario}, {regalo}, {cantidad}, {diamantes}</span>
+              </div>
+            </div>
+
+            <!-- SONIDO DE ALERTA -->
+            <div class="inner-card mt-4">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Efecto de sonido de alerta</span>
+                  <span class="switch-desc">Reproduce un tono antes de agradecer el regalo.</span>
+                </div>
+                <input type="checkbox" id="chkSoundActive" class="ios-switch" checked>
+              </label>
+
+              <div class="form-field mt-3">
+                <label for="selectSound">Tono de alerta</label>
+                <div class="sound-select-row">
+                  <select id="selectSound" class="ios-select">
+                    <option value="Campana (Suave)">Campana (Suave)</option>
+                    <option value="Monedas / Donación">Monedas / Donación</option>
+                    <option value="Ding Brillante">Ding Brillante</option>
+                  </select>
+                  <button id="btnTestDonation" class="btn btn-secondary">🔔 Probar Alerta</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTROL MULTIMEDIA (YOUTUBE MUSIC / SPOTIFY) -->
+            <div class="inner-card mt-4">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">🎵 Control Multimedia con Donaciones</span>
+                  <span class="switch-desc">Cambia la canción en YouTube Music o Spotify cuando un espectador dona.</span>
+                </div>
+                <input type="checkbox" id="chkMediaActionActive" class="ios-switch">
+              </label>
+
+              <div class="form-grid mt-3">
+                <div class="form-field">
+                  <label for="selectMediaAction">Acción en YouTube Music</label>
+                  <select id="selectMediaAction" class="ios-select">
+                    <option value="next">⏭️ Siguiente canción (Next Track)</option>
+                    <option value="prev">⏮️ Canción anterior (Previous Track)</option>
+                    <option value="play_pause">⏯️ Pausar / Reanudar música</option>
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label for="numMediaMinDiamonds">Mínimo de diamantes requeridos</label>
+                  <div class="stepper-input">
+                    <button type="button" class="btn-step" id="btnDecMediaDiamond">-</button>
+                    <input type="number" id="numMediaMinDiamonds" min="1" max="1000" value="1" class="ios-input stepper-val">
+                    <button type="button" class="btn-step" id="btnIncMediaDiamond">+</button>
+                    <span class="input-helper">diamante(s)</span>
+                  </div>
+                  <span class="input-hint">Ej: 1 diamante (1 Rosa) cambia la canción automáticamente.</span>
+                </div>
+              </div>
+
+              <div class="media-test-row mt-3" style="display: flex; gap: 8px;">
+                <button type="button" id="btnTestMediaNext" class="btn btn-secondary btn-sm">⏭️ Probar Siguiente Canción</button>
+                <button type="button" id="btnTestMediaPrev" class="btn btn-secondary btn-sm">⏮️ Probar Canción Anterior</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: BIENVENIDAS AL DIRECTO -->
+        <section id="tabCommunity" class="tab-pane">
+          <div class="settings-group ios-card">
+            <h2 class="group-title">Bienvenidas al Live (Nuevos Espectadores)</h2>
+
+            <div class="toggle-group">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Activar detección de entradas</span>
+                  <span class="switch-desc">Detecta cuando nuevos espectadores ingresan a la transmisión.</span>
+                </div>
+                <input type="checkbox" id="chkWelcomeActive" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Mostrar entrada en el chat</span>
+                  <span class="switch-desc">Muestra una burbuja sutil en el feed cuando alguien se une al directo.</span>
+                </div>
+                <input type="checkbox" id="chkWelcomeChat" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Saludar por voz (TTS)</span>
+                  <span class="switch-desc">Lee en voz alta un mensaje de bienvenida cuando alguien entra.</span>
+                </div>
+                <input type="checkbox" id="chkWelcomeVoice" class="ios-switch">
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Anti-repetición de bienvenida</span>
+                  <span class="switch-desc">No saluda al mismo usuario más de una vez durante la sesión.</span>
+                </div>
+                <input type="checkbox" id="chkWelcomeAntiRepeat" class="ios-switch" checked>
+              </label>
+            </div>
+
+            <div class="form-field mt-4">
+              <label for="txtWelcomeTemplate">Plantilla de saludo</label>
+              <input type="text" id="txtWelcomeTemplate" value="¡Bienvenido {usuario} al directo!" class="ios-input">
+              <span class="input-hint">Variable disponible: {usuario} (nombre del espectador).</span>
+            </div>
+
+            <div class="form-field mt-3">
+              <label for="numWelcomeCooldown">Intervalo mínimo entre saludos de voz</label>
+              <div class="stepper-input">
+                <button type="button" class="btn-step" id="btnDecWelcomeCooldown">-</button>
+                <input type="number" id="numWelcomeCooldown" min="3" max="60" value="10" class="ios-input stepper-val">
+                <button type="button" class="btn-step" id="btnIncWelcomeCooldown">+</button>
+                <span class="input-helper">segundos</span>
+              </div>
+              <span class="input-hint">Protege tu directo de saturación de voz cuando entran muchas personas simultáneamente.</span>
+            </div>
+
+            <div class="test-voice-card mt-4">
+              <h3 class="sub-title">Probar Saludo de Bienvenida</h3>
+              <div class="test-row">
+                <input type="text" id="txtTestWelcomeUser" value="Alex" class="ios-input test-input" placeholder="Nombre de usuario de prueba">
+                <button id="btnTestWelcome" class="btn btn-primary">👋 Probar Bienvenida</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 5: FILTROS & SEGURIDAD -->
+        <section id="tabFilters" class="tab-pane">
+          <div class="settings-group ios-card">
+            <h2 class="group-title">Filtros de Seguridad y Estabilidad</h2>
+
+            <div class="form-field">
+              <label for="txtBannedWords">Palabras prohibidas (separadas por coma)</label>
+              <textarea id="txtBannedWords" rows="3" class="ios-textarea" placeholder="groseria1, insulto2, spam3"></textarea>
+              <span class="input-hint">Cualquier comentario con estas palabras será ignorado automáticamente.</span>
+            </div>
+
+            <div class="form-grid mt-4">
+              <div class="form-field">
+                <label for="numMaxChars">Máx. caracteres por comentario</label>
+                <input type="number" id="numMaxChars" min="10" max="300" value="85" class="ios-input">
+              </div>
+
+              <div class="form-field">
+                <label for="numMaxQueue">Límite de cola anti-lag</label>
+                <input type="number" id="numMaxQueue" min="3" max="50" value="8" class="ios-input">
+              </div>
+            </div>
+
+            <div class="toggle-group mt-4">
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Ignorar comentarios repetidos (Anti-spam)</span>
+                  <span class="switch-desc">Evita leer el mismo comentario más de una vez si el usuario o el chat lo envía reiteradamente.</span>
+                </div>
+                <input type="checkbox" id="chkIgnoreRepeated" class="ios-switch" checked>
+              </label>
+
+              <div class="form-field mt-3">
+                <label for="numRepeatTimeout">Ventana de memoria anti-repetición</label>
+                <div class="stepper-input">
+                  <button type="button" class="btn-step" id="btnDecRepeatTimeout">-</button>
+                  <input type="number" id="numRepeatTimeout" min="10" max="180" value="45" class="ios-input stepper-val">
+                  <button type="button" class="btn-step" id="btnIncRepeatTimeout">+</button>
+                  <span class="input-helper">segundos</span>
+                </div>
+                <span class="input-hint">Tiempo durante el cual comentarios idénticos no se leerán por voz.</span>
+              </div>
+
+              <label class="ios-switch-row mt-3">
+                <div class="switch-text">
+                  <span class="switch-title">Simplificar nombres largos / códigos</span>
+                  <span class="switch-desc">Reemplaza handles automáticos ("user82918...") por "Usuario", ahorrando varios segundos de voz.</span>
+                </div>
+                <input type="checkbox" id="chkCleanUsernames" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row mt-3">
+                <div class="switch-text">
+                  <span class="switch-title">Aceleración dinámica anti-acumulación</span>
+                  <span class="switch-desc">Aumenta automáticamente la velocidad de locución un 20% si hay 2 o más mensajes en espera.</span>
+                </div>
+                <input type="checkbox" id="chkDynamicSpeed" class="ios-switch" checked>
+              </label>
+
+              <div class="form-field mt-3">
+                <label for="numQueueTtl">Caducidad de comentarios en cola (Anti-lag)</label>
+                <div class="stepper-input">
+                  <button type="button" class="btn-step" id="btnDecQueueTtl">-</button>
+                  <input type="number" id="numQueueTtl" min="5" max="60" value="20" class="ios-input stepper-val">
+                  <button type="button" class="btn-step" id="btnIncQueueTtl">+</button>
+                  <span class="input-helper">segundos</span>
+                </div>
+                <span class="input-hint">Descarta comentarios que lleven esperando más de este tiempo si el chat es ultra rápido.</span>
+              </div>
+
+              <label class="ios-switch-row mt-3">
+                <div class="switch-text">
+                  <span class="switch-title">Enmascarar URLs y enlaces spam</span>
+                  <span class="switch-desc">Sustituye páginas web sospechosas por "[enlace]" para evitar spam.</span>
+                </div>
+                <input type="checkbox" id="chkFilterLinks" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Compactar repetición de emojis</span>
+                  <span class="switch-desc">Reduce emojis consecutivos a máximo 2 para evitar lecturas eternas.</span>
+                </div>
+                <input type="checkbox" id="chkCompactEmojis" class="ios-switch" checked>
+              </label>
+
+              <label class="ios-switch-row">
+                <div class="switch-text">
+                  <span class="switch-title">Reconexión automática anticaídas</span>
+                  <span class="switch-desc">Reintenta reconectar si TikTokLive reporta microcortes de red.</span>
+                </div>
+                <input type="checkbox" id="chkAutoReconnect" class="ios-switch" checked>
+              </label>
+            </div>
+
+            <div class="save-actions mt-4">
+              <button id="btnSaveConfig" class="btn btn-primary full-width">💾 Guardar Configuración</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- PIE DE PÁGINA NATIVO DESKTOP -->
+      <footer class="desktop-footer">
+        <div class="footer-author-info">
+          <span>Desarrollado con dedicación por <strong>i.am.lex</strong></span>
+          <span class="footer-sep">•</span>
+          <a href="https://web-lex.vercel.app/" class="external-link" target="_blank" rel="noopener">Sitio Web</a>
+          <span class="footer-sep">•</span>
+          <a href="https://www.tiktok.com/@l.am.lex_?is_from_webapp=1&sender_device=pc" class="external-link" target="_blank" rel="noopener">TikTok</a>
+          <span class="footer-sep">•</span>
+          <a href="https://www.instagram.com/l.am.lex_/" class="external-link" target="_blank" rel="noopener">Instagram</a>
+        </div>
+        <span class="footer-version">v3.2.1 Pro</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- MODAL DE DONACIÓN CON BINANCE -->
+  <div id="modalBinance" class="ios-modal-overlay" style="display: none;">
+    <div class="ios-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <span class="badge badge-binance">💛 Binance Pay</span>
+          <h2 class="modal-title">Apoyar el Proyecto</h2>
+        </div>
+        <button id="btnCloseBinance" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body-binance">
+        <!-- Código QR -->
+        <div class="qr-preview-box">
+          <img src="binance-qr.svg" alt="Binance QR" class="modal-qr-img" />
+        </div>
+
+        <!-- Binance Pay ID / UID -->
+        <div class="modal-field">
+          <div class="field-split">
+            <span class="badge-alias">Usuario: lexfabian</span>
+          </div>
+          <div class="copy-box">
+            <input type="text" id="binancePayIdVal" value="1175466526" readonly class="ios-input font-bold text-center" />
+            <button id="btnCopyPayId" class="btn btn-binance btn-sm">Copiar UID</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ACTUALIZACIÓN DISPONIBLE -->
+  <div id="modalUpdate" class="ios-modal-overlay" style="display: none;">
+    <div class="ios-modal-card update-card">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <span class="badge badge-celeste">🚀 Actualización</span>
+          <h2 class="modal-title">¡Nueva actualización disponible!</h2>
+        </div>
+        <button id="btnCloseUpdate" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="update-versions-row">
+        <span class="ver-curr">Versión actual: <strong id="lblCurrentVersion">v3.2.1</strong></span>
+        <span class="ver-arrow">➔</span>
+        <span class="ver-new">Nueva versión: <strong id="lblNewVersion">v1.2</strong></span>
+      </div>
+
+      <div class="update-changelog">
+        <h4>Novedades destacadas:</h4>
+        <ul id="updateChangelogList">
+          <li>🧠 Voces locales neuronales Piper (Argentina y España) 100% offline.</li>
+          <li>🎵 Control multimedia para YouTube Music en donaciones en vivo.</li>
+          <li>⚡ Escudo anti-lag con aceleración dinámica y bienvenida a espectadores.</li>
+          <li>🛡️ Descarga directa in-app sin bloqueos de Microsoft Edge ni navegador.</li>
+        </ul>
+      </div>
+
+      <!-- Barra de progreso de descarga in-app sin navegador -->
+      <div id="updateProgressBox" class="update-progress-box" style="display: none;">
+        <div class="update-progress-header">
+          <span id="updateProgressStatus" class="update-progress-status">Descargando actualización...</span>
+          <span id="updateProgressPercent" class="update-progress-percent">0%</span>
+        </div>
+        <div class="ios-progress-track">
+          <div id="updateProgressBar" class="ios-progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="update-progress-sub">
+          <span id="updateProgressDetail">0 MB / 0 MB</span>
+          <span id="updateProgressSpeed">0 MB/s</span>
+        </div>
+      </div>
+
+      <div class="update-actions mt-4">
+        <button id="btnDownloadUpdate" class="btn btn-primary full-width btn-lg">
+          ⬇️ Descargar e Instalar Directamente
+        </button>
+        <button id="btnInstallUpdate" class="btn btn-success full-width btn-lg" style="display: none; margin-top: 10px; background-color: var(--ios-green); color: white;">
+          🚀 Iniciar Instalador Ahora
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS FLOTANTES -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
