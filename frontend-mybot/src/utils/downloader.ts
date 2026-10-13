@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { INSTALLER_FILE, INSTALLER_SIZE_MB, INSTALLER_URL } from '../version'
 
 export interface DownloadProgress {
   percent: number
@@ -11,7 +12,7 @@ export const downloadPercent = ref(0)
 export const downloadDetail = ref('')
 export const isCompleted = ref(false)
 
-const ESTIMATED_SIZE_BYTES = 142 * 1024 * 1024 // ~140 MB
+const ESTIMATED_SIZE_BYTES = INSTALLER_SIZE_MB * 1024 * 1024
 
 /**
  * Descarga el instalador mediante Blob y ReadableStream reportando el porcentaje en tiempo real.
@@ -26,8 +27,8 @@ export async function iniciarDescargaGlobal(
   downloadDetail.value = 'Conectando con el servidor...'
   isCompleted.value = false
 
-  const fileUrl = '/downloads/MyBot_v1.3_Instalador.exe'
-  const fileName = 'MyBot_v1.2_Instalador.exe'
+  const fileUrl = INSTALLER_URL
+  const fileName = INSTALLER_FILE
 
   try {
     const res = await fetch(fileUrl)

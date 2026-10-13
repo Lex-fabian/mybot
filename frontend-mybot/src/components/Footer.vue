@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import { APP_VERSION_NAME } from '../version'
+</script>
+
 <template>
   <footer class="footer">
     <div class="container footer-container">
@@ -5,7 +9,7 @@
         <div class="footer-brand">
           <img src="/icono.png" alt="MyBot" class="footer-icon" />
           <span class="footer-name">MyBot</span>
-          <span class="footer-badge">v1.1</span>
+          <span class="footer-badge">{{ APP_VERSION_NAME }}</span>
         </div>
         <p class="footer-desc">
           Software libre y ligero para lectura de voz e interactividad en transmisiones de TikTok Live.
@@ -22,7 +26,7 @@
       </div>
 
       <div class="footer-right">
-        <span class="copyright">© 2026 MyBot v1.0 • Desarrollado por <strong>i.am.lex</strong></span>
+        <span class="copyright">© 2026 MyBot {{ APP_VERSION_NAME }} • Desarrollado por <strong>i.am.lex</strong></span>
         <span class="disclaimer">
           TikTok es una marca registrada de ByteDance Ltd. MyBot es un proyecto independiente desarrollado para la comunidad.
         </span>

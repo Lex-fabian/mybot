@@ -7,6 +7,7 @@ import {
   isCompleted as completado,
   iniciarDescargaGlobal as iniciarDescarga
 } from '../utils/downloader'
+import { APP_VERSION_NAME } from '../version'
 
 defineEmits<{
   (e: 'open-binance'): void
@@ -27,7 +28,7 @@ function handleDescarga() {
       <!-- HEADER INTRO -->
       <div class="hero-badge-wrapper">
         <span class="badge badge-celeste">
-          <span>MyBot v1.2 • Desarrollado por i.am.lex</span>
+          <span>MyBot {{ APP_VERSION_NAME }} • Desarrollado por i.am.lex</span>
         </span>
       </div>
 
@@ -82,7 +83,7 @@ function handleDescarga() {
               <span class="light yellow"></span>
               <span class="light green"></span>
             </div>
-            <span class="mockup-title">MyBot v1.0 — Lector de Comentarios y Donaciones</span>
+            <span class="mockup-title">MyBot {{ APP_VERSION_NAME }} — Lector de Comentarios y Donaciones</span>
             <span class="mockup-badge"><i class="fa-solid fa-circle" style="font-size: 8px;"></i> Conectado a @streamer</span>
           </div>
 

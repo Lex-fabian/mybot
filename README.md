@@ -193,11 +193,17 @@ La app ya instalada comprueba **`https://mybot-79861.web.app/version.json`** al
 arrancar. Si el campo `version` es **mayor** que el de la app, muestra el aviso
 "Nueva versión disponible" con el botón de descarga. Para publicar una versión:
 
-1. **Sube la versión en el código** (debe coincidir en los cuatro sitios):
+1. **Sube la versión en el código** (debe coincidir en todos los sitios):
    - `mybot_backend.py` → `APP_VERSION`
    - `web/app.js` → `VERSION_ACTUAL`
-   - `installer.iss` → `MyAppVersion`
+   - `installer.iss` → `MyAppVersion` y `OutputBaseFilename`
    - `frontend-mybot/public/version.json` → `version` y `version_name`
+   - `frontend-mybot/src/version.ts` → `APP_VERSION`, `APP_VERSION_NAME` y
+     `INSTALLER_SIZE_MB` (la web toma de aquí la versión del pie, la barra de
+     navegación, la portada y el nombre del instalador, así que no se
+     desincronizan entre sí)
+   - `frontend-mybot/index.html` → `<title>` y meta description (son HTML
+     estático, no pueden leer el archivo anterior)
 2. **Compila el ejecutable y el instalador** (requiere PyInstaller e Inno Setup):
    ```bat
    tools\build_release.bat

@@ -63,29 +63,6 @@ function copyToClipboard() {
               </div>
             </div>
           </div>
-
-          <!-- DISCORD EN APOYAR / COMUNIDAD -->
-          <div class="discord-support-card">
-            <div class="discord-card-inner">
-              <div class="discord-icon-badge">
-                <i class="fa-brands fa-discord"></i>
-              </div>
-              <div class="discord-card-text">
-                <div class="discord-card-title">Comunidad Oficial en Discord</div>
-                <div class="discord-card-desc">Únete para enterarte de noticias, actualizaciones de MyBot o dejar recomendaciones y sugerencias.</div>
-              </div>
-            </div>
-            <a
-              href="https://discord.gg/q9HsEkCHyN"
-              target="_blank"
-              rel="noopener"
-              class="btn-discord-join"
-            >
-              <i class="fa-brands fa-discord"></i>
-              <span>Unirse al Discord</span>
-              <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 11px;"></i>
-            </a>
-          </div>
         </div>
 
         <!-- SEPARADOR VERTICAL SUTIL -->
@@ -400,81 +377,7 @@ function copyToClipboard() {
   box-shadow: 0 4px 14px rgba(88, 101, 242, 0.15);
 }
 
-/* CARD DE APOYO DISCORD */
-.discord-support-card {
-  margin-top: 22px;
-  background: #F8FAFD;
-  border: 1px solid #E2E8F0;
-  border-radius: 16px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.discord-support-card:hover {
-  border-color: #5865F2;
-  box-shadow: 0 6px 18px rgba(88, 101, 242, 0.1);
-}
-
-.discord-card-inner {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.discord-icon-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: #5865F2;
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 19px;
-  flex-shrink: 0;
-}
-
-.discord-card-text {
-  flex: 1;
-}
-
-.discord-card-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--ios-text-primary);
-}
-
-.discord-card-desc {
-  font-size: 12px;
-  color: var(--ios-text-secondary);
-  line-height: 1.45;
-  margin-top: 2px;
-}
-
-.btn-discord-join {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: #5865F2;
-  color: #FFFFFF;
-  padding: 9px 16px;
-  border-radius: var(--radius-pill);
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.btn-discord-join:hover {
-  background: #4752C4;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(88, 101, 242, 0.35);
-}
-
+/* CARD DE APOYO DISCORD (retirada: el acceso a Discord ya esta en la columna del creador) */
 .link-icon-box {
   width: 36px;
   height: 36px;

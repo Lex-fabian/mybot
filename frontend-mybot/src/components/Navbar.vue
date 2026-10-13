@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { isDownloading, downloadPercent, isCompleted, iniciarDescargaGlobal } from '../utils/downloader'
+import { APP_VERSION_NAME } from '../version'
 
 defineEmits<{
   (e: 'open-binance'): void
@@ -13,7 +14,7 @@ defineEmits<{
         <img src="/icono.png" alt="MyBot" class="brand-icon" />
         <div class="brand-text">
           <span class="brand-title">MyBot</span>
-          <span class="brand-badge">v1.2</span>
+          <span class="brand-badge">{{ APP_VERSION_NAME }}</span>
         </div>
       </a>
 
