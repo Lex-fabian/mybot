@@ -1,27 +1,21 @@
 @echo off
 REM ===========================================================================
-REM  MyBot - Copia los binarios compilados a la carpeta de descargas del sitio
+REM  MyBot - Publica el instalador en Cloud Storage for Firebase
+REM
+REM  Sustituye a la copia en frontend-mybot\public\downloads. Los instaladores
+REM  ya no viajan dentro del sitio: se suben al bucket y se sirven desde
+REM  https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/
 REM ===========================================================================
 setlocal
 cd /d "%~dp0.."
-set "DEST=frontend-mybot\public\downloads"
 
-if not exist "%DEST%" mkdir "%DEST%"
-
-if not exist "dist_installer\MyBot_v*_Instalador.exe" (
-  echo [ERROR] No existe ningun instalador en dist_installer
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0publish_storage.ps1" %*
+if errorlevel 1 (
+  echo [ERROR] No se pudo publicar el instalador.
+  pause
   exit /b 1
 )
 
-REM Solo se publica el instalador: la aplicacion es una carpeta (PyInstaller
-REM onedir) y no existe un unico .exe portable que copiar.
-del /q "%DEST%\*.exe" 2>nul
-for %%F in ("dist_installer\MyBot_v*_Instalador.exe") do copy /Y "%%~F" "%DEST%\" >nul
-
-echo == Contenido de %DEST% ==
-dir /b "%DEST%"
-
 echo.
-echo == Tamano y SHA-256 ==
-powershell -NoProfile -Command "Get-ChildItem '%DEST%\*.exe' | ForEach-Object { '{0}  {1} bytes' -f $_.Name, $_.Length }"
-powershell -NoProfile -Command "Get-ChildItem '%DEST%\*.exe' | ForEach-Object { '{0}  {1}' -f (Get-FileHash -Algorithm SHA256 $_.FullName).Hash, $_.Name }"
+echo Recuerda actualizar frontend-mybot\public\version.json con el sha256 y
+echo el tamano que se muestran arriba, y despues ejecutar tools\deploy_firebase.bat

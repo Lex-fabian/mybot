@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// =============================================================================
+// Reglas de Cloud Storage para MyBot
+// =============================================================================
+// El instalador se sirve como objeto publico directamente desde
+//   https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/<archivo>
+//
+// Estas reglas cubren el acceso a traves del SDK y de la API REST de Firebase
+// Storage. El bucket no almacena datos de usuarios: solo los instaladores
+// publicados, de modo que el resto de rutas queda cerrado.
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Lectura publica unicamente de la carpeta de instaladores publicados.
+    match /instaladores/{archivo} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Cualquier otra ruta queda denegada por defecto.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -52,15 +52,11 @@ goto check_login
 echo Sesion de Firebase OK.
 
 echo.
-echo == 4/4 Desplegando en Firebase Hosting ==
-call firebase deploy --only hosting --project mybot-79861
+REM Se despliegan el sitio y las reglas de Cloud Storage. Los instaladores ya no
+REM forman parte del sitio: viven en el bucket y se publican con publish_downloads.bat
+echo == 4/4 Desplegando sitio y reglas de Storage ==
+call firebase deploy --only hosting,storage --project mybot-79861
 if errorlevel 1 ( echo [ERROR] Fallo el despliegue. & pause & exit /b 1 )
-
-echo.
-REM La build copia public\downloads a dist\downloads (~190 MB). Ya esta subido a
-REM Firebase, asi que se borra la copia local para no duplicar los instaladores.
-REM public\downloads sigue siendo la unica fuente: la build la vuelve a copiar.
-if exist "dist\downloads" rmdir /s /q "dist\downloads"
 
 echo.
 echo ===========================================================

@@ -1167,7 +1167,7 @@
       });
       dom.btnDownloadUpdate.addEventListener("click", () => {
         const url = (state.updateInfo && state.updateInfo.download_url)
-          || "https://mybot-79861.web.app/downloads/MyBot_v1.3_Instalador.exe";
+          || "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3_Instalador.exe";
         dom.btnDownloadUpdate.disabled = true;
         dom.btnDownloadUpdate.textContent = "⏳ Descargando en la app...";
         if (dom.updateProgressBox) {

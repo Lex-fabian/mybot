@@ -16,9 +16,22 @@
 export const APP_VERSION = '1.3.0'
 export const APP_VERSION_NAME = 'v1.3'
 
-/** Nombre del archivo publicado en frontend-mybot/public/downloads. */
+/**
+ * Los instaladores se publican en Cloud Storage for Firebase y no en Hosting.
+ * Motivo: con 69 MB por archivo, servirlos desde Hosting consume la cuota de
+ * transferencia del sitio entero (10 GB/mes), de modo que un pico de descargas
+ * afectaria a la propia pagina. En Storage la cuota es independiente y el
+ * binario deja de viajar en cada compilacion y despliegue del sitio.
+ *
+ * El bucket tiene lectura publica solo en la carpeta 'instaladores'
+ * (ver frontend-mybot/storage.rules).
+ */
+export const STORAGE_BUCKET = 'mybot-79861.firebasestorage.app'
+export const INSTALLER_FOLDER = 'instaladores'
+
+/** Nombre del archivo publicado en el bucket. */
 export const INSTALLER_FILE = `MyBot_${APP_VERSION_NAME}_Instalador.exe`
-export const INSTALLER_URL = `/downloads/${INSTALLER_FILE}`
+export const INSTALLER_URL = `https://storage.googleapis.com/${STORAGE_BUCKET}/${INSTALLER_FOLDER}/${INSTALLER_FILE}`
 
 /** Tamano aproximado en MB, usado solo si el servidor no envia Content-Length. */
 export const INSTALLER_SIZE_MB = 69.1

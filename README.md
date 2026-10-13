@@ -208,16 +208,22 @@ arrancar. Si el campo `version` es **mayor** que el de la app, muestra el aviso
    ```bat
    tools\build_release.bat
    ```
-3. **Publica los binarios** ejecutando `tools\publish_downloads.bat`, que copia el
-   instalador más reciente a `frontend-mybot\public\downloads\`.
-   > Esa carpeta es la **única** copia en disco. La build de Vite la replica en
-   > `dist\downloads` solo para el despliegue, y `deploy_firebase.bat` la borra al
-   > terminar para no duplicar ~70 MB.
+3. **Publica el instalador en Cloud Storage** con `tools\publish_downloads.bat`.
+   El script sube el instalador más reciente de `dist_installer\` a
+   `gs://mybot-79861.firebasestorage.app/instaladores/`, lo marca como lectura
+   pública, le aplica cacheo de un año y **te muestra el `sha256` y el tamaño
+   exactos** que hay que poner en `version.json`.
+   > Los instaladores **no** van dentro del sitio. Con 70 MB por archivo, servirlos
+   > desde Hosting consumiría la cuota de transferencia del sitio completo
+   > (10 GB/mes), de modo que un pico de descargas afectaría a la página. En
+   > Storage la cuota es independiente y el binario deja de viajar en cada build.
+   > El bucket solo permite lectura pública de la carpeta `instaladores`
+   > (ver `frontend-mybot/storage.rules`).
 4. **Actualiza `frontend-mybot\public\version.json`** con la nueva `version`,
-   `download_url`, `sha256` y `size_bytes` (el script genera `tools\checksums.json`).
+   `download_url`, `sha256` y `size_bytes` que imprimió el paso anterior.
    > Desde la 1.3 la app **verifica el SHA-256** del instalador antes de ofrecer la
    > instalación: si no coincide con `version.json`, la descarga se descarta.
-5. **Despliega:** `tools\deploy_firebase.bat`
+5. **Despliega el sitio y las reglas:** `tools\deploy_firebase.bat`
 
 > ⚠️ **Importante:** sube la versión en `version.json` **solo después** de haber
 > subido el instalador nuevo. Si no, los usuarios verían un aviso de actualización
@@ -272,7 +278,7 @@ MyBot/
 │   ├── app.css            # Sistema de diseño iOS blanco y celeste
 │   └── app.js             # Lógica cliente y WebSockets
 ├── frontend-mybot/        # Landing page (Vue + Vite) que se publica en Firebase
-│   └── public/downloads/  # Única copia local de los instaladores publicados
+│   └── storage.rules      # Reglas del bucket: lectura pública solo de instaladores
 ├── tools/                 # Scripts de compilación, firma y despliegue
 ├── audio_assets.py        # Gestor de audio y parada instantánea
 ├── config.json            # Configuración persistente del usuario
