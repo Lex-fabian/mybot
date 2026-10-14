@@ -13,8 +13,8 @@
  *   - frontend-mybot/public/version.json
  *   - frontend-mybot/index.html      -> <title> y meta description
  */
-export const APP_VERSION = '1.3.0'
-export const APP_VERSION_NAME = 'v1.3'
+export const APP_VERSION = '1.3.1'
+export const APP_VERSION_NAME = 'v1.3.1'
 
 /**
  * Los instaladores se publican en Cloud Storage for Firebase y no en Hosting.

@@ -23,7 +23,7 @@
   };
 
   // Versión de esta aplicación y servidor de actualizaciones
-  const VERSION_ACTUAL = "1.3.0";
+  const VERSION_ACTUAL = "1.3.1";
   const UPDATE_URL = "https://mybot-79861.web.app/version.json";
 
   function parsearVersion(v) {
@@ -161,12 +161,16 @@
     btnCopyPayId: document.getElementById("btnCopyPayId"),
 
     btnCheckUpdate: document.getElementById("btnCheckUpdate"),
+    appBadgeVersion: document.querySelector(".app-badge-version"),
+    footerVersion: document.querySelector(".footer-version"),
     btnCloseUpdate: document.getElementById("btnCloseUpdate"),
     modalUpdate: document.getElementById("modalUpdate"),
     btnDownloadUpdate: document.getElementById("btnDownloadUpdate"),
     btnInstallUpdate: document.getElementById("btnInstallUpdate"),
+    btnLaterUpdate: document.getElementById("btnLaterUpdate"),
     lblCurrentVersion: document.getElementById("lblCurrentVersion"),
     lblNewVersion: document.getElementById("lblNewVersion"),
+    updateChangelogList: document.getElementById("updateChangelogList"),
     updateProgressBox: document.getElementById("updateProgressBox"),
     updateProgressStatus: document.getElementById("updateProgressStatus"),
     updateProgressPercent: document.getElementById("updateProgressPercent"),
@@ -427,8 +431,7 @@
 
       case "update_ready":
         state.installerPath = data.installer_path;
-        if (dom.updateProgressBar) dom.updateProgressBar.style.width = "100%";
-        if (dom.updateProgressPercent) dom.updateProgressPercent.textContent = "100%";
+        if (dom.updateProgressBar) dom.updateProgressBar.style.width = "100%";        if (dom.updateProgressPercent) dom.updateProgressPercent.textContent = "100%";
         if (dom.updateProgressStatus) dom.updateProgressStatus.textContent = "✓ ¡Descarga finalizada!";
         if (dom.btnDownloadUpdate) dom.btnDownloadUpdate.style.display = "none";
         if (dom.btnInstallUpdate) {
@@ -445,6 +448,31 @@
           dom.btnDownloadUpdate.textContent = "Reintentar Descarga";
         }
         showToast(`Error: ${data.error}`);
+        break;
+
+      case "nueva_version":
+        procesarActualizacion(data, Boolean(data.manual));
+        break;
+
+      case "sin_actualizacion":
+        if (data.manual) showToast(`✓ Ya tienes la última versión (v${VERSION_ACTUAL}).`);
+        break;
+
+      case "error_actualizacion":
+        if (data.manual) showToast("No se pudo comprobar las actualizaciones.");
+        console.warn("[Update] Error al comprobar:", data.error);
+        break;
+
+      case "app_cerrando":
+        // El instalador va a reemplazar los archivos de la aplicacion, asi que hay
+        // que cerrarla. Se espera a que el asistente arranque para que el usuario
+        // lo vea, y se para el audio para no dejarlo sonando sin interfaz.
+        sendAction("mute");
+        showToast("Instalador en marcha. MyBot se cerrara para actualizarse...");
+        setTimeout(() => {
+          const api = window.pywebview && window.pywebview.api;
+          if (api && typeof api.cerrar_app === "function") api.cerrar_app();
+        }, data.delay_ms || 2500);
         break;
     }
   }
@@ -1160,6 +1188,8 @@
         comprobarActualizaciones(true);
       });
       dom.btnCloseUpdate.addEventListener("click", () => {
+        // Posponer: se recuerda la version para no volver a insistir al arrancar.
+        if (state.updateInfo && state.updateInfo.version) omitirVersion(state.updateInfo.version);
         dom.modalUpdate.style.display = "none";
       });
       dom.modalUpdate.addEventListener("click", (e) => {
@@ -1167,7 +1197,7 @@
       });
       dom.btnDownloadUpdate.addEventListener("click", () => {
         const url = (state.updateInfo && state.updateInfo.download_url)
-          || "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3_Instalador.exe";
+          || "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.1_Instalador.exe";
         dom.btnDownloadUpdate.disabled = true;
         dom.btnDownloadUpdate.textContent = "⏳ Descargando en la app...";
         if (dom.updateProgressBox) {
@@ -1188,39 +1218,136 @@
           }, 1200);
         });
       }
+
+      // Posponer la actualización desde su propio boton (mismo efecto que la X).
+      if (dom.btnLaterUpdate) {
+        dom.btnLaterUpdate.addEventListener("click", () => {
+          if (state.updateInfo && state.updateInfo.version) omitirVersion(state.updateInfo.version);
+          dom.modalUpdate.style.display = "none";
+          showToast(`Se avisará de nuevo al publicar una versión posterior.`);
+        });
+      }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ACTUALIZACIONES
+  // Al arrancar se consulta version.json en segundo plano. Si hay una version
+  // nueva se ofrece descargarla e instalarla sin salir de la aplicacion; si el
+  // usuario decide posponerla, no se vuelve a insistir con esa misma version.
+  // ---------------------------------------------------------------------------
+  const CLAVE_OMITIDA = "mybot_version_omitida";
+
+  function versionOmitida() {
+    try {
+      return localStorage.getItem(CLAVE_OMITIDA) || "";
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function omitirVersion(version) {
+    try {
+      localStorage.setItem(CLAVE_OMITIDA, String(version || ""));
+    } catch (e) {
+      /* almacenamiento no disponible */
+    }
+  }
+
+  function itemsChangelog(data) {
+    const c = data.changelog_items || data.changelog;
+    if (!c) return [];
+    if (Array.isArray(c)) return c.map(String).filter(Boolean);
+    return String(c).split(/\r?\n/).map(t => t.trim()).filter(Boolean);
+  }
+
+  function mostrarModalActualizacion(data) {
+    if (!dom.modalUpdate) return;
+
+    if (dom.lblCurrentVersion) dom.lblCurrentVersion.textContent = `v${VERSION_ACTUAL}`;
+    if (dom.lblNewVersion) dom.lblNewVersion.textContent = data.version_name || data.version;
+
+    if (dom.updateChangelogList) {
+      const items = itemsChangelog(data);
+      dom.updateChangelogList.innerHTML = "";
+      if (items.length) {
+        items.forEach(t => {
+          const li = document.createElement("li");
+          li.textContent = t;
+          dom.updateChangelogList.appendChild(li);
+        });
+      } else {
+        const li = document.createElement("li");
+        li.textContent = "Mejoras de rendimiento y correccion de errores.";
+        dom.updateChangelogList.appendChild(li);
+      }
+    }
+
+    if (dom.btnDownloadUpdate) {
+      dom.btnDownloadUpdate.style.display = "block";
+      dom.btnDownloadUpdate.disabled = false;
+      dom.btnDownloadUpdate.textContent = "⬇️ Descargar e Instalar Directamente";
+    }
+    if (dom.btnInstallUpdate) dom.btnInstallUpdate.style.display = "none";
+    if (dom.updateProgressBox) dom.updateProgressBox.style.display = "none";
+    dom.modalUpdate.style.display = "flex";
+  }
+
+  /** Refleja la version real de la aplicacion en el encabezado y el pie. */
+  function refrescarVersionUI() {
+    if (dom.appBadgeVersion) dom.appBadgeVersion.textContent = `v${VERSION_ACTUAL}`;
+    if (dom.footerVersion) dom.footerVersion.textContent = `v${VERSION_ACTUAL}`;
   }
 
   function comprobarActualizaciones(esManual = false) {
     if (esManual) showToast("Buscando actualizaciones de MyBot...");
+
+    // La consulta la hace el backend (Python): la aplicacion se sirve desde
+    // 127.0.0.1, asi que un fetch() a mybot-79861.web.app seria de otro origen y
+    // el navegador lo bloquearia por CORS. Si no hay WebSocket, se intenta
+    // directamente como respaldo.
+    const wsAbierto = state.ws && state.ws.readyState === WebSocket.OPEN;
+    if (wsAbierto) {
+      sendAction("check_update", { manual: esManual });
+      return;
+    }
+    comprobarActualizacionesPorHttp(esManual);
+  }
+
+  /** Respaldo por HTTP directo (solo funciona si el origen coincide con UPDATE_URL). */
+  function comprobarActualizacionesPorHttp(esManual = false) {
     fetch(`${UPDATE_URL}?t=${Date.now()}`, { cache: "no-store" })
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then(data => {
-        if (esVersionMayor(data.version, VERSION_ACTUAL)) {
-          state.updateInfo = data;
-          if (dom.modalUpdate) {
-            if (dom.lblCurrentVersion) dom.lblCurrentVersion.textContent = `v${VERSION_ACTUAL}`;
-            dom.lblNewVersion.textContent = data.version_name || data.version;
-            if (dom.btnDownloadUpdate) {
-              dom.btnDownloadUpdate.style.display = "block";
-              dom.btnDownloadUpdate.disabled = false;
-              dom.btnDownloadUpdate.textContent = "⬇️ Descargar e Instalar Directamente";
-            }
-            if (dom.btnInstallUpdate) dom.btnInstallUpdate.style.display = "none";
-            if (dom.updateProgressBox) dom.updateProgressBox.style.display = "none";
-            dom.modalUpdate.style.display = "flex";
-          }
-        } else if (esManual) {
-          showToast(`✓ Ya tienes la última versión (v${VERSION_ACTUAL}).`);
-        }
-      })
+      .then(data => procesarActualizacion(data, esManual))
       .catch(err => {
         if (esManual) showToast("No se pudo comprobar las actualizaciones.");
-        console.warn("[Update] Error al comprobar:", err);
+        console.warn("[Update] Error al comprobar por HTTP:", err);
       });
+  }
+
+  /** Decide si se muestra el aviso de nueva version. */
+  function procesarActualizacion(data, esManual = false) {
+    if (!esVersionMayor(data.version, VERSION_ACTUAL)) {
+      if (esManual) showToast(`✓ Ya tienes la última versión (v${VERSION_ACTUAL}).`);
+      return;
+    }
+
+    state.updateInfo = data;
+
+    // Una comprobacion automatica no insiste si esa version ya se pospuso.
+    if (!esManual && versionOmitida() === String(data.version)) {
+      console.info(`[Update] Version ${data.version} pospuesta por el usuario.`);
+      return;
+    }
+    mostrarModalActualizacion(data);
+  }
+
+  /** Consulta version.json unos segundos despues de arrancar, sin bloquear la carga. */
+  function comprobarActualizacionesAlArrancar() {
+    setTimeout(() => comprobarActualizaciones(false), 5000);
   }
 
   let debounceTimer = null;
@@ -1276,10 +1403,12 @@
      INICIALIZACIÓN
      ========================================================================== */
   document.addEventListener("DOMContentLoaded", () => {
+    refrescarVersionUI();
     iniciarSplashScreen();
     setupTabs();
     setupWebSocket();
     setupEventListeners();
+    comprobarActualizacionesAlArrancar();
   });
 
 })();

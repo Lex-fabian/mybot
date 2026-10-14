@@ -122,8 +122,9 @@ def _resolver_archivo_config() -> str:
 
 CONFIG_FILE = _resolver_archivo_config()
 
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 USER_AGENT = f"MyBot-Desktop-App/{APP_VERSION}"
+UPDATE_URL = "https://mybot-79861.web.app/version.json"
 
 # Voces Neurales Edge TTS
 VOICES_EDGE = [
@@ -344,6 +345,21 @@ def normalizar_comentario(comentario: str, filtrar_links: bool = True, compactar
     if compactar_emojis:
         c = re.sub(r"([\U00010000-\U0010ffff])\1{2,}", r"\1\1", c)
     return c.strip()
+
+
+def _version_mayor(remota: str, local: str) -> bool:
+    """Compara versiones tipo 1.3.0 frente a 1.2.10. Ignora textos como 'v'."""
+    def partes(v: str):
+        limpio = re.sub(r"[^\d.]", "", str(v or ""))
+        return [int(p) for p in limpio.split(".") if p != ""] or [0]
+
+    a, b = partes(remota), partes(local)
+    for i in range(max(len(a), len(b))):
+        x = a[i] if i < len(a) else 0
+        y = b[i] if i < len(b) else 0
+        if x != y:
+            return x > y
+    return False
 
 
 def mensaje_error_conexion(exc: Exception) -> str:
@@ -902,6 +918,40 @@ class MyBotService:
         finally:
             self._descarga_voz_activa = False
 
+    # ------------------------------------------------------------------ ACTUALIZACIONES
+    def comprobar_actualizacion(self, manual: bool = False):
+        """Consulta version.json desde Python.
+
+        Se hace aqui y no en el navegador porque la aplicacion se sirve desde
+        127.0.0.1, de modo que la peticion a mybot-79861.web.app es de otro origen
+        y el navegador la bloquearia por CORS (Firebase Hosting no envia
+        Access-Control-Allow-Origin). Python no tiene esa restriccion.
+        """
+
+        def _worker():
+            import urllib.request
+
+            try:
+                url = f"{UPDATE_URL}?t={int(time.time())}"
+                peticion = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": USER_AGENT, "Cache-Control": "no-cache"},
+                )
+                with urllib.request.urlopen(peticion, timeout=15) as respuesta:
+                    datos = json.loads(respuesta.read().decode("utf-8"))
+
+                remota = str(datos.get("version", "") or "")
+                if _version_mayor(remota, APP_VERSION):
+                    payload = dict(datos)
+                    payload["manual"] = manual
+                    self.emit_ws("nueva_version", payload)
+                else:
+                    self.emit_ws("sin_actualizacion", {"version": APP_VERSION, "manual": manual})
+            except Exception as e:  # noqa: BLE001
+                self.emit_ws("error_actualizacion", {"error": str(e), "manual": manual})
+
+        threading.Thread(target=_worker, daemon=True).start()
+
     def descargar_actualizacion(self, url: str, sha256_esperado: str = ""):
         """Descarga el instalador de actualización dentro de la app (sin navegador) y
         verifica su firma SHA-256 antes de permitir la instalación."""
@@ -1002,6 +1052,10 @@ class MyBotService:
             os.startfile(destino)
             self.emit_ws("toast", {"message": "🚀 Lanzando asistente de instalación..."})
             self.emit_ws("sis", {"message": f"[Actualización] Instalador ejecutado: {os.path.basename(destino)}"})
+            # El instalador necesita reemplazar MyBot.exe y los archivos de _internal,
+            # que estan bloqueados mientras la aplicacion sigue abierta. Se avisa a la
+            # interfaz para que cierre la aplicacion en cuanto el asistente arranque.
+            self.emit_ws("app_cerrando", {"delay_ms": 2500})
             return True
         except Exception as e:
             self.emit_ws("toast", {"message": f"No se pudo ejecutar el instalador: {e}"})
@@ -1569,6 +1623,9 @@ async def ws_handler(request):
                 elif action == "download_update":
                     url = data.get("url", "")
                     service.descargar_actualizacion(url, str(data.get("sha256", "") or ""))
+
+                elif action == "check_update":
+                    service.comprobar_actualizacion(bool(data.get("manual", False)))
 
                 elif action == "download_voice_model":
                     service.descargar_modelo_voz(str(data.get("id", "") or ""))

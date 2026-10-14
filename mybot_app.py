@@ -63,6 +63,9 @@ def _preparar_salidas_de_texto():
 
 _preparar_salidas_de_texto()
 
+# Referencia a la ventana activa, para poder cerrarla desde la interfaz.
+_ventana = None
+
 
 def _configurar_proceso_windows():
     """DPI awareness y AppUserModelID para un icono propio en la barra de tareas."""
@@ -98,6 +101,15 @@ class ApiPuente:
 
     def ruta_descargas(self) -> str:
         return os.path.join(backend.BASE_DIR, "assets", "descargas_audio")
+
+    def cerrar_app(self) -> bool:
+        """Cierra la aplicacion. La usa el actualizador: el instalador necesita
+        reemplazar MyBot.exe y los archivos de _internal, que estan bloqueados
+        mientras la aplicacion sigue abierta."""
+        if _ventana is not None:
+            _ventana.destroy()
+            return True
+        return False
 
 
 def _esperar_servidor(timeout: float = 30.0) -> bool:
@@ -183,6 +195,8 @@ def _iniciar_ventana(ventana, funcion=None):
 
 
 def main() -> int:
+    global _ventana
+
     _configurar_proceso_windows()
 
     # Si ya hay una instancia escuchando (por ejemplo la app abierta dos veces),
@@ -216,6 +230,7 @@ def main() -> int:
         background_color="#F2F4F8",
         text_select=False,
     )
+    _ventana = ventana
 
     if "--selftest" in sys.argv:
         _iniciar_ventana(ventana, lambda: _autoprueba(ventana))

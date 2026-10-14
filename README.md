@@ -1,4 +1,4 @@
-# MyBot v1.3 — Lector de Comentarios y Donaciones TikTok Live
+# MyBot v1.3.1 — Lector de Comentarios y Donaciones TikTok Live
 
 **MyBot v1.0** es una aplicación de escritorio nativa independiente para Windows. Pantalla de inicio de carga y lectura en tiempo real de directos de **TikTok Live**.
 
@@ -191,43 +191,64 @@ La primera vez pedirá iniciar sesión con tu cuenta de Google.
 
 La app ya instalada comprueba **`https://mybot-79861.web.app/version.json`** al
 arrancar. Si el campo `version` es **mayor** que el de la app, muestra el aviso
-"Nueva versión disponible" con el botón de descarga. Para publicar una versión:
-
-1. **Sube la versión en el código** (debe coincidir en todos los sitios):
+"Nueva versión disponible" con el botón de descarga. Para publicar una versión:2. **Actualiza la versión en el código** (debe coincidir en todos los sitios):
    - `mybot_backend.py` → `APP_VERSION`
-   - `web/app.js` → `VERSION_ACTUAL`
-   - `installer.iss` → `MyAppVersion` y `OutputBaseFilename`
-   - `frontend-mybot/public/version.json` → `version` y `version_name`
-   - `frontend-mybot/src/version.ts` → `APP_VERSION`, `APP_VERSION_NAME` y
-     `INSTALLER_SIZE_MB` (la web toma de aquí la versión del pie, la barra de
-     navegación, la portada y el nombre del instalador, así que no se
-     desincronizan entre sí)
+   - `web/app.js` → `VERSION_ACTUAL` y la URL de respaldo del instalador
+   - `installer.iss` → `MyAppVersion`, `OutputBaseFilename` y `VersionInfoVersion`
+   - `frontend-mybot/src/version.ts` → `APP_VERSION` y `APP_VERSION_NAME`
+     (la web toma de aquí la versión del pie, la barra de navegación, la portada
+     y el nombre del instalador, así que no se desincronizan entre sí)
    - `frontend-mybot/index.html` → `<title>` y meta description (son HTML
      estático, no pueden leer el archivo anterior)
-2. **Compila el ejecutable y el instalador** (requiere PyInstaller e Inno Setup):
+   - `frontend-mybot/public/version.json` → `version`, `version_name`,
+     `download_url` y `changelog`
+3. **Compila el ejecutable y el instalador** (requiere PyInstaller e Inno Setup):
    ```bat
    tools\build_release.bat
    ```
-3. **Publica el instalador en Cloud Storage** con `tools\publish_downloads.bat`.
+4. **Publica el instalador en Cloud Storage** con `tools\publish_downloads.bat`.
    El script sube el instalador más reciente de `dist_installer\` a
    `gs://mybot-79861.firebasestorage.app/instaladores/`, lo marca como lectura
    pública, le aplica cacheo de un año y **te muestra el `sha256` y el tamaño
-   exactos** que hay que poner en `version.json`.
+   exactos**.
    > Los instaladores **no** van dentro del sitio. Con 70 MB por archivo, servirlos
    > desde Hosting consumiría la cuota de transferencia del sitio completo
    > (10 GB/mes), de modo que un pico de descargas afectaría a la página. En
    > Storage la cuota es independiente y el binario deja de viajar en cada build.
    > El bucket solo permite lectura pública de la carpeta `instaladores`
    > (ver `frontend-mybot/storage.rules`).
-4. **Actualiza `frontend-mybot\public\version.json`** con la nueva `version`,
-   `download_url`, `sha256` y `size_bytes` que imprimió el paso anterior.
-   > Desde la 1.3 la app **verifica el SHA-256** del instalador antes de ofrecer la
-   > instalación: si no coincide con `version.json`, la descarga se descarta.
-5. **Despliega el sitio y las reglas:** `tools\deploy_firebase.bat`
+5. **Copia el `sha256` y el tamaño** que imprimió el paso anterior en
+   `frontend-mybot\public\version.json`, y escribe el `changelog` de la versión.
+   > La aplicación **verifica el SHA-256** del instalador antes de ofrecer la
+   > instalación: si no coincide, la descarga se descarta.
+   > El `changelog` se muestra en el aviso de actualización de la app; admite una
+   > cadena o una lista `changelog_items` para poner una novedad por línea.
+6. **Despliega el sitio y las reglas:** `tools\deploy_firebase.bat`
 
 > ⚠️ **Importante:** sube la versión en `version.json` **solo después** de haber
 > subido el instalador nuevo. Si no, los usuarios verían un aviso de actualización
 > que descargaría el archivo antiguo.
+
+### Cómo se actualiza la app instalada
+
+1. Al arrancar, **unos segundos después** de mostrar la ventana, MyBot consulta
+   `version.json`.
+   > La consulta la hace el backend en Python, no el navegador: la aplicación se
+   > sirve desde `127.0.0.1`, así que una petición a `mybot-79861.web.app` sería de
+   > otro origen y el navegador la bloquearía por CORS.
+2. Si hay una versión mayor, muestra un aviso con la versión nueva y el
+   `changelog`. El botón **Más tarde** la pospone y no vuelve a insistir con esa
+   misma versión (se recuerda en el almacenamiento local). El botón **Actualizar**
+   de la cabecera fuerza la comprobación siempre.
+3. **Descargar e Instalar Directamente** baja el instalador dentro de la propia
+   aplicación, con barra de progreso, velocidad y verificación SHA-256.
+4. **Iniciar Instalador Ahora** lo ejecuta y cierra MyBot, porque el instalador
+   necesita reemplazar `MyBot.exe` y los archivos de `_internal`, que están
+   bloqueados mientras la aplicación sigue abierta. Al terminar, el asistente
+   ofrece volver a abrirla.
+
+Para forzar la comprobación sin esperar al arranque, pulsa **Actualizar** en la
+cabecera.
 
 ### Voz neuronal offline (Piper)
 
@@ -245,7 +266,7 @@ la app los detecta como voz personalizada aunque no estén en el catálogo.
 ## Cómo Iniciar MyBot
 
 ### Opción 1: Versión instalada (Recomendado)
-Ejecuta el instalador `MyBot_v1.3_Instalador.exe` y abre **MyBot** desde el menú
+Ejecuta el instalador `MyBot_v1.3.1_Instalador.exe` y abre **MyBot** desde el menú
 Inicio o el acceso directo del escritorio. No requiere Python ni Node.js: todo
 va empaquetado en el ejecutable.
 

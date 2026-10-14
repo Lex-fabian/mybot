@@ -1,14 +1,14 @@
 {
-  "version": "1.3.0",
-  "version_name": "v1.3",
+  "version": "1.3.1",
+  "version_name": "v1.3.1",
   "min_required_version": "1.0.0",
-  "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3_Instalador.exe",
-  "sha256": "E79A551758B696686EA2D97B3F3641A1F35E99FC885F4F93FC89A1E74CE1243D",
-  "size_bytes": 72419969,
+  "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.1_Instalador.exe",
+  "sha256": "E3CB77657A850F845CBF6A9921D724B31167D30911B8906A42B20AAEEAC38AAA",
+  "size_bytes": 72428039,
   "checksums": {
-    "MyBot_v1.3_Instalador.exe": "E79A551758B696686EA2D97B3F3641A1F35E99FC885F4F93FC89A1E74CE1243D"
+    "MyBot_v1.3.1_Instalador.exe": "E3CB77657A850F845CBF6A9921D724B31167D30911B8906A42B20AAEEAC38AAA"
   },
-  "changelog": "Versión 1.3: aplicación unificada con ventana nativa WebView2 (sin Electron ni Node.js ni GUI duplicada), arranque en unos 3 segundos, voces neuronales Piper descargables desde la propia app, instalador de 69 MB, motor Piper por defecto sin depender de la nube y verificación SHA-256 de las actualizaciones.",
-  "release_date": "2026-10-13",
+  "changelog": "Corregida la comprobación de actualizaciones: la consulta ahora la hace el backend y ya no la bloquea el navegador por CORS.\nAviso automático de nueva versión al arrancar, con las novedades de cada versión.\nOpcion 'Mas tarde' para posponer una actualización sin que vuelva a insistir.\nLa aplicación se cierra sola al lanzar el instalador para poder actualizarse.\nLa versión mostrada en la cabecera y el pie ya no esta fijada a mano.\nLos instaladores se publican en Cloud Storage, con lo que dejan de consumir la cuota del sitio.",
+  "release_date": "2026-10-14",
   "author": "i.am.lex"
 }

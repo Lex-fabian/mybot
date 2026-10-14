@@ -1,5 +1,5 @@
 #define MyAppName "MyBot"
-#define MyAppVersion "1.3"
+#define MyAppVersion "1.3.1"
 #define MyAppPublisher "i.am.lex"
 #define MyAppURL "https://mybot-79861.web.app"
 #define MyAppExeName "MyBot.exe"
@@ -21,7 +21,7 @@ DisableProgramGroupPage=yes
 
 ; Configuración del instalador
 OutputDir=dist_installer
-OutputBaseFilename=MyBot_v1.3_Instalador
+OutputBaseFilename=MyBot_v1.3.1_Instalador
 SetupIconFile=assets\icono.ico
 WizardImageFile=assets\wizard_left.bmp
 WizardSmallImageFile=assets\wizard_small.bmp
@@ -33,11 +33,11 @@ WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.3.0.0
+VersionInfoVersion=1.3.1.0
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=MyBot v1.3 - Lector de Comentarios y Donaciones TikTok Live
+VersionInfoDescription=MyBot v1.3.1 - Lector de Comentarios y Donaciones TikTok Live
 VersionInfoProductName=MyBot
-VersionInfoProductVersion=1.3.0.0
+VersionInfoProductVersion=1.3.1.0
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
