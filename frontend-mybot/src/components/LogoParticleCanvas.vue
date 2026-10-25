@@ -220,8 +220,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 230px;
-  margin: 0 auto 10px;
+  max-width: 280px;
+  margin: 0 auto;
 }
 
 .canvas-ambient-glow {
@@ -229,8 +229,8 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 170px;
-  height: 170px;
+  width: 210px;
+  height: 210px;
   background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(0, 122, 255, 0.04) 50%, transparent 70%);
   pointer-events: none;
   filter: blur(20px);
