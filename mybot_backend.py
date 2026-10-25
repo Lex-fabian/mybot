@@ -661,6 +661,7 @@ CONFIG_DEFECTOS = {
     "aceleracion_dinamica": True,
     "ttl_comentarios_cola": 20,
     "limpiar_nombres_usuarios": True,
+    "auth_user": None,
 }
 
 CONFIG_BOOL = {
@@ -711,6 +712,18 @@ def sanear_config(crudo, base=None) -> dict:
         if clave not in referencia:
             continue
         defecto = referencia[clave]
+
+        if clave == "auth_user":
+            if valor is None:
+                limpio[clave] = None
+            elif isinstance(valor, dict):
+                limpio[clave] = {
+                    "uid": str(valor.get("uid", ""))[:128],
+                    "email": str(valor.get("email", ""))[:200],
+                    "displayName": str(valor.get("displayName", ""))[:150],
+                    "photoURL": str(valor.get("photoURL", ""))[:500],
+                }
+            continue
 
         if clave in CONFIG_BOOL:
             if isinstance(valor, bool):
@@ -911,6 +924,10 @@ class MyBotService:
             if self.hilo_cliente and self.hilo_cliente.is_alive():
                 self.emit_ws("toast", {"message": "Ya hay una conexión activa o en proceso"})
                 return
+        if not self.cfg.get("auth_user"):
+            self.emit_ws("toast", {"message": "Debes iniciar sesión con Google para usar MyBot."})
+            self.emit_ws("estado", {"text": "Inicia sesión con Google para continuar", "status": "red"})
+            return
 
         usuario_limpio = limpiar_nombre_usuario_tiktok(str(usuario_raw or "")[:500])
         usuario_limpio = usuario_limpio[:100]
@@ -2044,7 +2061,7 @@ async def seguridad_middleware(request, handler):
     respuesta.headers.setdefault("Referrer-Policy", "no-referrer")
     respuesta.headers.setdefault("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
     respuesta.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
-    respuesta.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    respuesta.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
     respuesta.headers.setdefault("Content-Security-Policy", CSP)
     respuesta.headers.setdefault("Cache-Control", "no-cache")
     return respuesta
@@ -2069,6 +2086,7 @@ async def ws_handler(request):
     init_data = {
         "version": APP_VERSION,
         "config": service.cfg,
+        "auth_user": service.cfg.get("auth_user"),
         "voices_edge": VOICES_EDGE,
         "voices_sapi5": service.voces_sapi5,
         "voices_piper": obtener_voces_piper(),
@@ -2290,6 +2308,50 @@ def detener_servidor():
             pass
 
 
+async def login_page_handler(request):
+    """Sirve la página de autenticación de Google con Firebase."""
+    ruta_login = os.path.join(WEB_DIR, "login.html")
+    if os.path.exists(ruta_login):
+        with open(ruta_login, "r", encoding="utf-8") as f:
+            contenido = f.read()
+        return web.Response(text=contenido, content_type="text/html", charset="utf-8")
+    return web.Response(text="Página de inicio de sesión no encontrada.", status=404)
+
+
+async def auth_session_handler(request):
+    """Recibe la sesión validada desde Firebase Auth."""
+    try:
+        body = await request.json()
+    except Exception:
+        return web.json_response({"ok": False, "error": "JSON inválido"}, status=400)
+
+    uid = str(body.get("uid", "")).strip()
+    if not uid:
+        return web.json_response({"ok": False, "error": "UID requerido"}, status=400)
+
+    auth_data = {
+        "uid": uid[:128],
+        "email": str(body.get("email", ""))[:200],
+        "displayName": str(body.get("displayName", ""))[:150],
+        "photoURL": str(body.get("photoURL", ""))[:500],
+    }
+    service.cfg["auth_user"] = auth_data
+    service._guardar_configuracion()
+
+    # Notificar a los clientes conectados por WebSocket
+    service.emit_ws("auth_state", {"logged_in": True, "user": auth_data})
+    nombre_mostrar = auth_data.get("displayName") or auth_data.get("email") or "Usuario"
+    service.emit_ws("toast", {"message": f"¡Bienvenido, {nombre_mostrar}!"})
+    return web.json_response({"ok": True, "user": auth_data})
+
+
+async def auth_open_browser_handler(request):
+    """Abre el navegador por defecto para iniciar sesión con Google."""
+    url_login = f"http://127.0.0.1:{PORT}/login"
+    threading.Thread(target=lambda: webbrowser.open(url_login), daemon=True).start()
+    return web.json_response({"ok": True, "url": url_login})
+
+
 def iniciar_servidor(bloquear: bool = True):
     """Arranca el servidor HTTP/WebSocket en 127.0.0.1.
 
@@ -2315,6 +2377,9 @@ def iniciar_servidor(bloquear: bool = True):
     app = web.Application(middlewares=[seguridad_middleware])
     app.router.add_get("/", index_handler)
     app.router.add_get("/index.html", index_handler)
+    app.router.add_get("/login", login_page_handler)
+    app.router.add_post("/api/auth/session", auth_session_handler)
+    app.router.add_get("/api/auth/open-browser", auth_open_browser_handler)
     app.router.add_get("/api/health", health_handler)
     app.router.add_get("/ws", ws_handler)
     app.router.add_static("/", WEB_DIR)

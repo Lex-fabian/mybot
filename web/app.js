@@ -12,6 +12,7 @@
   // Estado global de la aplicación
   const state = {
     connected: false,
+    authUser: null,
     ws: null,
     config: {},
     voicesEdge: [],
@@ -61,6 +62,15 @@
     btnDisconnect: document.getElementById("btnDisconnect"),
     connStatusPill: document.getElementById("connStatusPill"),
     connStatusText: document.getElementById("connStatusText"),
+
+    // Autenticación Google Firebase
+    btnHeaderLogin: document.getElementById("btnHeaderLogin"),
+    authUserPill: document.getElementById("authUserPill"),
+    authUserAvatar: document.getElementById("authUserAvatar"),
+    authUserName: document.getElementById("authUserName"),
+    btnHeaderLogout: document.getElementById("btnHeaderLogout"),
+    authGateBanner: document.getElementById("authGateBanner"),
+    btnAuthGateLogin: document.getElementById("btnAuthGateLogin"),
     
     // Métricas
     statComments: document.getElementById("statComments"),
@@ -414,6 +424,11 @@
         state.presets = data.presets || {};
         state.sounds = data.sounds || [];
         poblarControles();
+        actualizarUsuarioAuth(data.auth_user || (state.config && state.config.auth_user) || null);
+        break;
+
+      case "auth_state":
+        actualizarUsuarioAuth(data.user || null);
         break;
 
       case "join":
@@ -925,10 +940,58 @@
         dom.btnConnect.className = "btn btn-secondary";
         dom.btnConnect.textContent = "Conectando...";
       } else {
-        dom.btnConnect.disabled = false;
+        dom.btnConnect.disabled = !state.authUser;
         dom.btnConnect.className = "btn btn-primary";
         dom.btnConnect.textContent = "Conectar";
+        if (!state.authUser) {
+          dom.btnConnect.title = "Inicia sesión con Google para usar MyBot";
+        } else {
+          dom.btnConnect.title = "";
+        }
         state.connected = false;
+      }
+    }
+  }
+
+  function actualizarUsuarioAuth(user) {
+    state.authUser = user;
+    const isLogged = !!(user && user.uid);
+
+    if (isLogged) {
+      if (dom.btnHeaderLogin) dom.btnHeaderLogin.style.display = "none";
+      if (dom.authUserPill) dom.authUserPill.style.display = "inline-flex";
+      if (dom.authUserName) {
+        const nom = (user.displayName || user.email || "Usuario").split(" ")[0];
+        dom.authUserName.textContent = nom;
+      }
+      if (dom.authUserAvatar) {
+        if (user.photoURL) {
+          dom.authUserAvatar.src = user.photoURL;
+          dom.authUserAvatar.style.display = "block";
+        } else {
+          dom.authUserAvatar.style.display = "none";
+        }
+      }
+      if (dom.authGateBanner) dom.authGateBanner.style.display = "none";
+      if (dom.tiktokUser) {
+        dom.tiktokUser.disabled = false;
+        dom.tiktokUser.placeholder = "l.am.lex_";
+      }
+      if (dom.btnConnect && !state.connected) {
+        dom.btnConnect.disabled = false;
+        dom.btnConnect.title = "";
+      }
+    } else {
+      if (dom.btnHeaderLogin) dom.btnHeaderLogin.style.display = "inline-flex";
+      if (dom.authUserPill) dom.authUserPill.style.display = "none";
+      if (dom.authGateBanner) dom.authGateBanner.style.display = "flex";
+      if (dom.tiktokUser && !state.connected) {
+        dom.tiktokUser.disabled = true;
+        dom.tiktokUser.placeholder = "Inicia sesión con Google";
+      }
+      if (dom.btnConnect && !state.connected) {
+        dom.btnConnect.disabled = true;
+        dom.btnConnect.title = "Inicia sesión con Google para usar MyBot";
       }
     }
   }
@@ -985,10 +1048,32 @@
      9. EVENT LISTENERS E INTERACCIÓN
      ========================================================================== */
   function setupEventListeners() {
+    // Autenticación con Google mediante Firebase
+    const triggerLogin = () => {
+      sendAction("login_browser");
+    };
+
+    if (dom.btnHeaderLogin) dom.btnHeaderLogin.addEventListener("click", triggerLogin);
+    if (dom.btnAuthGateLogin) dom.btnAuthGateLogin.addEventListener("click", triggerLogin);
+
+    if (dom.btnHeaderLogout) {
+      dom.btnHeaderLogout.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (confirm("¿Cerrar sesión de Google en MyBot?")) {
+          sendAction("logout");
+        }
+      });
+    }
+
     // Conectar / Desconectar unificado en un solo botón
     dom.btnConnect.addEventListener("click", () => {
       if (state.connected) {
         sendAction("disconnect");
+        return;
+      }
+      if (!state.authUser) {
+        showToast("Debes iniciar sesión con Google para usar MyBot");
+        triggerLogin();
         return;
       }
       const user = dom.tiktokUser.value.trim().replace(/^@+/, "");
