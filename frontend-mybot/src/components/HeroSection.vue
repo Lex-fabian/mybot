@@ -22,44 +22,46 @@ function handleDescarga() {
   <section class="hero-section">
     <div class="container hero-container">
       
-      <!-- LOGO INTERACTIVO DIBUJADO CON PARTÍCULAS -->
-      <LogoParticleCanvas />
+      <!-- FILA HERO DE 2 COLUMNAS: ANIMACIÓN A LA IZQUIERDA Y TEXTO + BOTÓN A LA DERECHA -->
+      <div class="hero-split-row">
+        <div class="hero-left-col">
+          <LogoParticleCanvas />
+        </div>
 
-      <h1 class="hero-title">
-        La voz de tu directo en <span class="text-gradient">TikTok Live</span>
-      </h1>
+        <div class="hero-right-col">
+          <h1 class="hero-title">
+            Un amigo para ti y tu <span class="text-gradient">comunidad</span>
+          </h1>
 
-      <p class="hero-subtitle">
-        Un amigo para ti y tu comunidad
-      </p>
+          <!-- BOTÓN DESCARGAR MYBOT CON ÍCONO DE WINDOWS -->
+          <div class="hero-cta-group" id="descarga">
+            <button
+              type="button"
+              class="btn btn-primary btn-lg btn-download-interactive"
+              :class="{ 'btn-loading': descargando, 'btn-done': completado }"
+              :disabled="descargando"
+              @click="handleDescarga"
+            >
+              <i v-if="!descargando && !completado" class="fa-brands fa-windows" style="font-size: 19px;"></i>
+              <i v-else-if="descargando" class="fa-solid fa-spinner fa-spin" style="font-size: 19px;"></i>
+              <i v-else class="fa-solid fa-check" style="font-size: 19px;"></i>
 
-      <!-- BOTONES DE ACCIÓN (SOLO DESCARGAR MYBOT CON ÍCONO DE WINDOWS) -->
-      <div class="hero-cta-group" id="descarga">
-        <button
-          type="button"
-          class="btn btn-primary btn-lg btn-download-interactive"
-          :class="{ 'btn-loading': descargando, 'btn-done': completado }"
-          :disabled="descargando"
-          @click="handleDescarga"
-        >
-          <i v-if="!descargando && !completado" class="fa-brands fa-windows" style="font-size: 19px;"></i>
-          <i v-else-if="descargando" class="fa-solid fa-spinner fa-spin" style="font-size: 19px;"></i>
-          <i v-else class="fa-solid fa-check" style="font-size: 19px;"></i>
+              <div class="download-btn-text">
+                <span v-if="!descargando && !completado">Descargar MyBot</span>
+                <span v-else-if="descargando">Descargando MyBot... {{ progreso }}%</span>
+                <span v-else>¡Descarga finalizada!</span>
+                <small v-if="descargando || completado" class="download-subtext">{{ detalleDescarga }}</small>
+              </div>
 
-          <div class="download-btn-text">
-            <span v-if="!descargando && !completado">Descargar MyBot</span>
-            <span v-else-if="descargando">Descargando MyBot... {{ progreso }}%</span>
-            <span v-else>¡Descarga finalizada!</span>
-            <small v-if="descargando || completado" class="download-subtext">{{ detalleDescarga }}</small>
+              <!-- Barra de progreso visual in-button -->
+              <div v-if="descargando" class="btn-progress-bar" :style="{ width: progreso + '%' }"></div>
+            </button>
           </div>
 
-          <!-- Barra de progreso visual in-button -->
-          <div v-if="descargando" class="btn-progress-bar" :style="{ width: progreso + '%' }"></div>
-        </button>
-      </div>
-
-      <div class="hero-specs-row">
-        <span class="spec-item">Windows 10 / 11 (64-bit)</span>
+          <div class="hero-specs-row">
+            <span class="spec-item">Windows 10 / 11 (64-bit)</span>
+          </div>
+        </div>
       </div>
 
       <!-- MOCKUP VISUAL DE LA APP DESKTOP -->
@@ -116,63 +118,71 @@ function handleDescarga() {
   align-items: center;
 }
 
-.hero-logo-mark {
-  width: 88px;
-  height: 88px;
-  margin: 10px auto 18px;
+.hero-split-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #FFFFFF;
-  border: 1px solid var(--ios-border);
-  border-radius: 22px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  gap: 32px;
+  width: 100%;
+  max-width: 880px;
+  margin: 10px auto 30px;
 }
 
-.hero-logo-mark img {
-  width: 62px;
-  height: 62px;
-  border-radius: 16px;
-  display: block;
+.hero-left-col {
+  flex: 0 0 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hero-badge-wrapper {
-  margin-bottom: 12px;
+.hero-right-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
-.hero-title {
-  font-size: 34px;
+.hero-right-col .hero-title {
+  font-size: 36px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--ios-text-primary);
-  max-width: 720px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.hero-right-col .hero-cta-group {
   margin-bottom: 12px;
+  justify-content: flex-start;
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #007AFF 0%, #38BDF8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.hero-right-col .hero-specs-row {
+  justify-content: flex-start;
 }
 
-.hero-subtitle {
-  font-size: 21px;
-  font-weight: 600;
-  color: #334155;
-  max-width: 600px;
-  line-height: 1.4;
-  margin-bottom: 24px;
-  letter-spacing: -0.01em;
-}
+@media (max-width: 768px) {
+  .hero-split-row {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
 
-.hero-cta-group {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+  .hero-right-col {
+    align-items: center;
+    text-align: center;
+  }
+
+  .hero-right-col .hero-title {
+    text-align: center;
+    font-size: 28px;
+  }
+
+  .hero-right-col .hero-cta-group,
+  .hero-right-col .hero-specs-row {
+    justify-content: center;
+  }
 }
 
 .hero-specs-row {
