@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { INSTALLER_FILE, INSTALLER_SIZE_MB, INSTALLER_URL } from '../version'
+import { INSTALLER_FILE, INSTALLER_SIZE_BYTES, INSTALLER_URL } from '../version'
 
 export interface DownloadProgress {
   percent: number
@@ -12,7 +12,7 @@ export const downloadPercent = ref(0)
 export const downloadDetail = ref('')
 export const isCompleted = ref(false)
 
-const ESTIMATED_SIZE_BYTES = INSTALLER_SIZE_MB * 1024 * 1024
+const ESTIMATED_SIZE_BYTES = INSTALLER_SIZE_BYTES
 
 /**
  * Descarga el instalador mediante Blob y ReadableStream reportando el porcentaje en tiempo real.

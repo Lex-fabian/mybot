@@ -220,8 +220,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 380px;
-  margin: 0 auto 16px;
+  max-width: 230px;
+  margin: 0 auto 10px;
 }
 
 .canvas-ambient-glow {
@@ -229,11 +229,11 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, rgba(0, 122, 255, 0.05) 50%, transparent 70%);
+  width: 170px;
+  height: 170px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, rgba(0, 122, 255, 0.04) 50%, transparent 70%);
   pointer-events: none;
-  filter: blur(24px);
+  filter: blur(20px);
   z-index: 0;
 }
 

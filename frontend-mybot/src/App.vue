@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Navbar from './components/Navbar.vue'
+import SecurityNotice from './components/SecurityNotice.vue'
 import HeroSection from './components/HeroSection.vue'
 import Features from './components/Features.vue'
 import UserGuide from './components/UserGuide.vue'
@@ -22,6 +23,7 @@ function scrollToDonations() {
 <template>
   <div class="landing-page">
     <Navbar @open-binance="scrollToDonations" />
+    <SecurityNotice />
     <main>
       <HeroSection @open-binance="scrollToDonations" />
       <Features />

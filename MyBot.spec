@@ -46,17 +46,23 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        # Dependencias exclusivas de la antigua GUI de Tkinter, ya retirada.
+        # Dependencias innecesarias y suites de pruebas
         "tkinter",
         "PIL",
         "PIL.ImageTk",
+        "pytest",
+        "unittest",
+        "numpy.testing",
+        "scipy",
     ],
     noarchive=False,
-    optimize=0,
+    optimize=1,
 )
 pyz = PYZ(a.pure)
 
 icon_path = "assets/icono.ico" if os.path.exists("assets/icono.ico") else None
+# Los metadatos de version reducen los falsos positivos de antivirus/SmartScreen.
+version_path = "version_info.txt" if os.path.exists("version_info.txt") else None
 
 # MYBOT_CONSOLE=1 genera una version con consola para diagnosticar errores de
 # arranque (el ejecutable distribuible se compila sin consola).
@@ -82,6 +88,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_path,
+    version=version_path,
 )
 
 coll = COLLECT(

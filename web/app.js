@@ -7,6 +7,8 @@
 (function () {
   "use strict";
 
+  let splashAnimId = null;
+
   // Estado global de la aplicación
   const state = {
     connected: false,
@@ -23,7 +25,7 @@
   };
 
   // Versión de esta aplicación y servidor de actualizaciones
-  const VERSION_ACTUAL = "1.3.1";
+  let VERSION_ACTUAL = "1.3.3";
   const UPDATE_URL = "https://mybot-79861.web.app/version.json";
 
   function parsearVersion(v) {
@@ -109,6 +111,7 @@
     btnDecDiamond: document.getElementById("btnDecDiamond"),
     btnIncDiamond: document.getElementById("btnIncDiamond"),
     chkReadDonation: document.getElementById("chkReadDonation"),
+    txtDonationPrefix: document.getElementById("txtDonationPrefix"),
     txtDonationTemplate: document.getElementById("txtDonationTemplate"),
     chkSoundActive: document.getElementById("chkSoundActive"),
     selectSound: document.getElementById("selectSound"),
@@ -120,6 +123,7 @@
     btnIncMediaDiamond: document.getElementById("btnIncMediaDiamond"),
     btnTestMediaNext: document.getElementById("btnTestMediaNext"),
     btnTestMediaPrev: document.getElementById("btnTestMediaPrev"),
+    btnTestMediaPlayPause: document.getElementById("btnTestMediaPlayPause"),
 
     // Bienvenidas
     chkWelcomeActive: document.getElementById("chkWelcomeActive"),
@@ -215,7 +219,6 @@
           });
         }
 
-        let animId = 0;
         function render() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           const time = performance.now() * 0.0025;
@@ -245,13 +248,25 @@
             ctx.fill();
           }
 
-          animId = requestAnimationFrame(render);
+          splashAnimId = requestAnimationFrame(render);
         }
-        render();
+        splashAnimId = requestAnimationFrame(render);
       })
       .catch(err => {
         console.warn("No se pudieron cargar los puntos del logo:", err);
       });
+  }
+
+  function detenerCanvasPuntos() {
+    if (splashAnimId) {
+      cancelAnimationFrame(splashAnimId);
+      splashAnimId = null;
+    }
+    const canvas = document.getElementById("splashLogoCanvas");
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   }
 
   function iniciarSplashScreen() {
@@ -275,6 +290,10 @@
         clearInterval(intervalo);
         setTimeout(() => {
           dom.splash.classList.add("fade-out");
+          setTimeout(() => {
+            detenerCanvasPuntos();
+            if (dom.splash) dom.splash.style.display = "none";
+          }, 400);
         }, 350);
       }
     }, 280);
@@ -303,12 +322,34 @@
      ========================================================================== */
   function setupWebSocket() {
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${location.host}/ws`;
+    // Token inyectado por el backend: impide que una página web externa se
+    // conecte al servidor local y controle el bot.
+    const metaToken = document.querySelector('meta[name="mybot-token"]');
+    const token = metaToken ? metaToken.content.trim() : "";
+
+    // Una página antigua de la caché de WebView2 no trae el token y el servidor
+    // rechaza su WebSocket. Se recarga una sola vez con una URL sin caché.
+    if (!token || token === "__MYBOT_TOKEN__") {
+      if (!sessionStorage.getItem("mybot_token_reload")) {
+        sessionStorage.setItem("mybot_token_reload", "1");
+        const url = new URL(location.href);
+        url.searchParams.set("v", String(Date.now()));
+        location.replace(url.toString());
+        return;
+      }
+      document.body.dataset.ws = "sin-token";
+      showToast("La interfaz está desactualizada. Cierra y vuelve a abrir MyBot.");
+      return;
+    }
+
+    const wsUrl = `${protocol}//${location.host}/ws?token=${encodeURIComponent(token)}`;
 
     const ws = new WebSocket(wsUrl);
     state.ws = ws;
 
     ws.onopen = () => {
+      document.body.dataset.ws = "open";
+      sessionStorage.removeItem("mybot_token_reload");
       console.log("[WS] Conectado al backend de MyBot.");
     };
 
@@ -322,11 +363,13 @@
     };
 
     ws.onclose = () => {
+      document.body.dataset.ws = "closed";
       console.warn("[WS] Desconectado. Reintentando en 2 segundos...");
       setTimeout(setupWebSocket, 2000);
     };
 
     ws.onerror = (err) => {
+      document.body.dataset.ws = "error";
       console.error("[WS] Error en socket:", err);
     };
   }
@@ -360,6 +403,10 @@
     switch (type) {
       case "init":
         state.config = data.config || {};
+        if (data.version) {
+          VERSION_ACTUAL = String(data.version);
+          refrescarVersionUI();
+        }
         state.voicesEdge = data.voices_edge || [];
         state.voicesSapi5 = data.voices_sapi5 || [];
         state.voicesPiper = data.voices_piper || [];
@@ -386,7 +433,7 @@
         break;
 
       case "err":
-        appendSystemBubble("⚠️ " + data.message, true);
+        appendSystemBubble(data.message, true);
         break;
 
       case "estado":
@@ -406,7 +453,7 @@
         break;
 
       case "queue":
-        dom.queueCount.textContent = data.count;
+        if (dom.queueCount) dom.queueCount.textContent = data.count;
         break;
 
       case "stats":
@@ -480,11 +527,21 @@
   /* ==========================================================================
      5. ACTUALIZACIÓN VISUAL Y POBLACIÓN DE CONTROLES
      ========================================================================== */
+
+  // Limpia emojis e iconos de nombres para mostrar texto plano y limpio
+  function limpiarIconosTexto(str) {
+    if (!str) return "";
+    return str
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "")
+      .replace(/^[\s·\-–—]+|[\s·\-–—]+$/g, "")
+      .trim();
+  }
+
   function poblarControles() {
     const cfg = state.config;
 
     // Usuario
-    if (cfg.usuario) dom.tiktokUser.value = cfg.usuario;
+    if (cfg.usuario) dom.tiktokUser.value = String(cfg.usuario).replace(/^@+/, "");
 
     // Motor (Piper offline es el preferido: sin Internet y sin el error 403 de Edge TTS)
     dom.selectEngine.value = cfg.motor || "piper";
@@ -494,7 +551,7 @@
     Object.keys(state.presets).forEach(name => {
       const opt = document.createElement("option");
       opt.value = name;
-      opt.textContent = name;
+      opt.textContent = limpiarIconosTexto(name) || name;
       dom.selectPreset.appendChild(opt);
     });
 
@@ -508,7 +565,7 @@
       state.sounds.forEach(name => {
         const opt = document.createElement("option");
         opt.value = name;
-        opt.textContent = name;
+        opt.textContent = limpiarIconosTexto(name) || name;
         dom.selectSound.appendChild(opt);
       });
     }
@@ -533,6 +590,11 @@
     dom.numMinDiamonds.value = cfg.min_diamantes || 1;
     dom.chkReadDonation.checked = cfg.leer_donacion !== false;
     dom.txtDonationTemplate.value = cfg.tpl_donacion || "¡Muchas gracias a {usuario} por enviar {cantidad} {regalo}!";
+    if (dom.txtDonationPrefix) {
+      const tpl = dom.txtDonationTemplate.value;
+      const match = tpl.split(/\{usuario\}/i)[0];
+      dom.txtDonationPrefix.value = match ? match.trim() : "¡Muchas gracias a";
+    }
     dom.chkSoundActive.checked = cfg.sonido_activo !== false;
     if (cfg.tipo_sonido) dom.selectSound.value = cfg.tipo_sonido;
     if (dom.chkMediaActionActive) dom.chkMediaActionActive.checked = Boolean(cfg.accion_multimedia_activa);
@@ -584,7 +646,8 @@
       const opt = document.createElement("option");
       // El backend resuelve el id real a partir de la etiqueta mostrada.
       opt.value = etiqueta;
-      opt.textContent = v.instalada === false ? `${etiqueta} · sin descargar` : etiqueta;
+      const textoLimpio = limpiarIconosTexto(etiqueta) || etiqueta;
+      opt.textContent = v.instalada === false ? `${textoLimpio} · sin descargar` : textoLimpio;
       opt.dataset.vozId = (v.id || v[1] || "");
       opt.dataset.instalada = String(v.instalada !== false);
       opt.dataset.descargable = String(Boolean(v.descargable));
@@ -789,12 +852,14 @@
   function appendDonationCard(user, gift, count, diamonds) {
     const card = document.createElement("div");
     card.className = "donation-card";
+    const safeCount = Number.isFinite(Number(count)) ? Number(count) : 0;
+    const safeDiamonds = Number.isFinite(Number(diamonds)) ? Number(diamonds) : 0;
 
     card.innerHTML = `
       <div class="donation-icon">🎁</div>
       <div class="donation-content">
         <span class="donation-title">[DONACIÓN EN VIVO]</span>
-        <span class="donation-desc"><strong>${escapeHtml(user)}</strong> envió ${count}x ${escapeHtml(gift)} (${diamonds} 💎)</span>
+        <span class="donation-desc"><strong>${escapeHtml(user)}</strong> envió ${safeCount}x ${escapeHtml(gift)} (${safeDiamonds} 💎)</span>
       </div>
     `;
 
@@ -807,9 +872,11 @@
     const el = document.createElement("div");
     el.className = "system-bubble";
     if (isError) {
-      el.style.backgroundColor = "var(--ios-red-light)";
+      el.style.backgroundColor = "transparent";
       el.style.color = "var(--ios-red)";
-      el.style.fontWeight = "600";
+      el.style.fontWeight = "500";
+      el.style.border = "none";
+      el.style.padding = "3px 6px";
     }
     el.textContent = msg;
     dom.chatFeed.appendChild(el);
@@ -835,23 +902,34 @@
      7. ESTADOS Y BADGES
      ========================================================================== */
   function actualizarEstadoConexion(text, status) {
-    dom.connStatusText.textContent = text;
-    dom.connStatusPill.className = "metric-pill";
+    if (dom.connStatusText) dom.connStatusText.textContent = text;
+    if (dom.connStatusPill) {
+      dom.connStatusPill.className = "metric-pill";
+      if (status === "green") {
+        dom.connStatusPill.classList.add("pill-status-connected");
+      } else if (status === "amber") {
+        dom.connStatusPill.classList.add("pill-status-connecting");
+      } else {
+        dom.connStatusPill.classList.add("pill-status-disconnected");
+      }
+    }
 
-    if (status === "green") {
-      dom.connStatusPill.classList.add("pill-status-connected");
-      dom.btnConnect.disabled = true;
-      dom.btnDisconnect.disabled = false;
-      state.connected = true;
-    } else if (status === "amber") {
-      dom.connStatusPill.classList.add("pill-status-connecting");
-      dom.btnConnect.disabled = true;
-      dom.btnDisconnect.disabled = false;
-    } else {
-      dom.connStatusPill.classList.add("pill-status-disconnected");
-      dom.btnConnect.disabled = false;
-      dom.btnDisconnect.disabled = true;
-      state.connected = false;
+    if (dom.btnConnect) {
+      if (status === "green") {
+        dom.btnConnect.disabled = false;
+        dom.btnConnect.className = "btn btn-danger";
+        dom.btnConnect.textContent = "Desconectar";
+        state.connected = true;
+      } else if (status === "amber") {
+        dom.btnConnect.disabled = true;
+        dom.btnConnect.className = "btn btn-secondary";
+        dom.btnConnect.textContent = "Conectando...";
+      } else {
+        dom.btnConnect.disabled = false;
+        dom.btnConnect.className = "btn btn-primary";
+        dom.btnConnect.textContent = "Conectar";
+        state.connected = false;
+      }
     }
   }
 
@@ -874,10 +952,16 @@
       topText = "Voz: Error";
     }
 
-    dom.testStatusBadge.className = `ios-pill ${badgeClass}`;
-    dom.testStatusBadge.textContent = badgeText;
-    dom.testStatusDetail.textContent = detail || "Voz lista para usar en el directo.";
-    dom.topTtsStatusText.textContent = topText;
+    if (dom.testStatusBadge) {
+      dom.testStatusBadge.className = `ios-pill ${badgeClass}`;
+      dom.testStatusBadge.textContent = badgeText;
+    }
+    if (dom.testStatusDetail) {
+      dom.testStatusDetail.textContent = detail || "Voz lista para usar en el directo.";
+    }
+    if (dom.topTtsStatusText) {
+      dom.topTtsStatusText.textContent = topText;
+    }
   }
 
   /* ==========================================================================
@@ -901,19 +985,32 @@
      9. EVENT LISTENERS E INTERACCIÓN
      ========================================================================== */
   function setupEventListeners() {
-    // Conectar / Desconectar
+    // Conectar / Desconectar unificado en un solo botón
     dom.btnConnect.addEventListener("click", () => {
-      const user = dom.tiktokUser.value.trim();
+      if (state.connected) {
+        sendAction("disconnect");
+        return;
+      }
+      const user = dom.tiktokUser.value.trim().replace(/^@+/, "");
       if (!user) {
-        showToast("Introduce un usuario o link de TikTok Live");
+        showToast("Introduce tu usuario de TikTok");
         dom.tiktokUser.focus();
         return;
       }
       sendAction("connect", { user });
     });
 
-    dom.btnDisconnect.addEventListener("click", () => {
-      sendAction("disconnect");
+    if (dom.btnDisconnect) {
+      dom.btnDisconnect.addEventListener("click", () => {
+        sendAction("disconnect");
+      });
+    }
+
+    // Auto-eliminar @ si el usuario lo pega o escribe
+    dom.tiktokUser.addEventListener("input", () => {
+      if (dom.tiktokUser.value.startsWith("@")) {
+        dom.tiktokUser.value = dom.tiktokUser.value.replace(/^@+/, "");
+      }
     });
 
     // Enter en input de usuario
@@ -924,12 +1021,12 @@
     });
 
     // Limpiar chat y Silenciar audio inmediato
-    dom.btnClearChat.addEventListener("click", () => {
+    if (dom.btnClearChat) dom.btnClearChat.addEventListener("click", () => {
       dom.chatFeed.innerHTML = "";
       appendSystemBubble("Chat limpiado.");
     });
 
-    dom.btnMuteAudio.addEventListener("click", () => {
+    if (dom.btnMuteAudio) dom.btnMuteAudio.addEventListener("click", () => {
       sendAction("mute");
     });
 
@@ -1041,6 +1138,12 @@
       });
     }
 
+    if (dom.btnTestMediaPlayPause) {
+      dom.btnTestMediaPlayPause.addEventListener("click", () => {
+        sendAction("test_media", { media_action: "play_pause" });
+      });
+    }
+
     // Steppers de Bienvenida
     if (dom.btnDecWelcomeCooldown && dom.numWelcomeCooldown) {
       dom.btnDecWelcomeCooldown.addEventListener("click", () => {
@@ -1110,19 +1213,33 @@
       sendAction("test_voice", { text });
     });
 
-    dom.btnDownloadVoice.addEventListener("click", () => {
+    if (dom.btnDownloadVoice) {
+      dom.btnDownloadVoice.addEventListener("click", () => {
       const text = dom.txtTestVoice.value.trim() || "Prueba de voz en directo.";
       sendAction("download_voice", { text });
-    });
+      });
+    }
 
-    dom.btnTestDonation.addEventListener("click", () => {
+        if (dom.txtDonationPrefix) {
+      dom.txtDonationPrefix.addEventListener("input", () => {
+        const p = dom.txtDonationPrefix.value.trim();
+        dom.txtDonationTemplate.value = `${p} {usuario} por enviar {cantidad} {regalo}!`.trim();
+        guardarConfiguracionDebounced();
+      });
+    }
+
+    if (dom.btnTestDonation) {
+      dom.btnTestDonation.addEventListener("click", () => {
       sendAction("test_donation");
-    });
+      });
+    }
 
     if (dom.btnTestWelcome) {
       dom.btnTestWelcome.addEventListener("click", () => {
         const user = (dom.txtTestWelcomeUser && dom.txtTestWelcomeUser.value.trim()) || "Alex";
-        sendAction("test_welcome", { user });
+        const template = (dom.txtWelcomeTemplate && dom.txtWelcomeTemplate.value.trim()) || "¡Bienvenido {usuario} al directo!";
+        sendAction("test_welcome", { user, template });
+        showToast(`Probando bienvenida para ${user}...`);
       });
     }
 
@@ -1197,7 +1314,7 @@
       });
       dom.btnDownloadUpdate.addEventListener("click", () => {
         const url = (state.updateInfo && state.updateInfo.download_url)
-          || "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.1_Instalador.exe";
+          || "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.3_Instalador.exe";
         dom.btnDownloadUpdate.disabled = true;
         dom.btnDownloadUpdate.textContent = "⏳ Descargando en la app...";
         if (dom.updateProgressBox) {
@@ -1408,6 +1525,90 @@
     setupTabs();
     setupWebSocket();
     setupEventListeners();
+
+    // Configuración de transparencia y desacople de chat
+    const rangeBg = document.getElementById("rangeChatBgOpacity");
+    const lblBg = document.getElementById("lblChatBgOpacity");
+    const rangeText = document.getElementById("rangeChatTextOpacity");
+    const lblText = document.getElementById("lblChatTextOpacity");
+    const btnPopout = document.getElementById("btnPopoutChat");
+    const chatFeed = dom.chatFeed;
+    const chatWrapper = document.querySelector(".chat-wrapper");
+
+    function aplicarOpacidadChat(bgVal, textVal) {
+      const bgPct = (parseInt(bgVal, 10) || 100) / 100;
+      const textPct = (parseInt(textVal, 10) || 100) / 100;
+
+      if (chatFeed) {
+        chatFeed.style.backgroundColor = `rgba(250, 251, 253, ${bgPct})`;
+        chatFeed.style.color = `rgba(28, 28, 30, ${textPct})`;
+      }
+      if (chatWrapper) {
+        chatWrapper.style.backgroundColor = bgPct < 1 ? `rgba(255, 255, 255, ${Math.max(0.1, bgPct * 0.9)})` : "";
+      }
+      // Actualizar burbujas
+      document.querySelectorAll(".chat-bubble, .welcome-bubble, .donation-card").forEach(el => {
+        el.style.opacity = String(textPct);
+        if (bgPct < 0.6) {
+          el.style.backgroundColor = `rgba(255, 255, 255, ${Math.max(0.2, bgPct)})`;
+          el.style.backdropFilter = "blur(4px)";
+        } else {
+          el.style.backgroundColor = "";
+          el.style.backdropFilter = "";
+        }
+      });
+    }
+
+    if (rangeBg) {
+      const savedBg = localStorage.getItem("mybot_chat_bg_opacity") || "100";
+      rangeBg.value = savedBg;
+      if (lblBg) lblBg.textContent = `${savedBg}%`;
+
+      rangeBg.addEventListener("input", () => {
+        const val = rangeBg.value;
+        if (lblBg) lblBg.textContent = `${val}%`;
+        localStorage.setItem("mybot_chat_bg_opacity", val);
+        aplicarOpacidadChat(val, rangeText ? rangeText.value : 100);
+      });
+    }
+
+    if (rangeText) {
+      const savedText = localStorage.getItem("mybot_chat_text_opacity") || "100";
+      rangeText.value = savedText;
+      if (lblText) lblText.textContent = `${savedText}%`;
+
+      rangeText.addEventListener("input", () => {
+        const val = rangeText.value;
+        if (lblText) lblText.textContent = `${val}%`;
+        localStorage.setItem("mybot_chat_text_opacity", val);
+        aplicarOpacidadChat(rangeBg ? rangeBg.value : 100, val);
+      });
+    }
+
+    // Inicializar opacidad guardada
+    aplicarOpacidadChat(
+      localStorage.getItem("mybot_chat_bg_opacity") || "100",
+      localStorage.getItem("mybot_chat_text_opacity") || "100"
+    );
+
+    if (btnPopout) {
+      btnPopout.addEventListener("click", () => {
+        const w = 420;
+        const h = 640;
+        const left = (screen.width - w) / 2;
+        const top = (screen.height - h) / 2;
+        window.open(
+          location.href + (location.href.includes("?") ? "&" : "?") + "popout=chat",
+          "MyBotChatWindow",
+          `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,status=no`
+        );
+      });
+    }
+
+    if (new URLSearchParams(location.search).get("popout") === "chat") {
+      document.body.classList.add("is-popout");
+    }
+
     comprobarActualizacionesAlArrancar();
   });
 

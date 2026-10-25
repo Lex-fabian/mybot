@@ -20,7 +20,7 @@ if errorlevel 1 (
 echo.
 echo == Generando checksums SHA-256 ==
 REM El instalador lleva la version en el nombre (ej. MyBot_v1.3_Instalador.exe)
-for %%F in ("dist\MyBot.exe" "dist_installer\MyBot_v*_Instalador.exe") do (
+for %%F in ("dist\MyBot\MyBot.exe" "dist_installer\MyBot_v*_Instalador.exe") do (
   if exist "%%~F" (
     for /f "usebackq delims=" %%H in (`powershell -NoProfile -Command "(Get-FileHash -Algorithm SHA256 '%%~F').Hash"`) do (
       echo   %%H  %%~nxF

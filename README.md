@@ -1,4 +1,4 @@
-# MyBot v1.3.1 — Lector de Comentarios y Donaciones TikTok Live
+# MyBot v1.3.3 — Lector de Comentarios y Donaciones TikTok Live
 
 **MyBot v1.0** es una aplicación de escritorio nativa independiente para Windows. Pantalla de inicio de carga y lectura en tiempo real de directos de **TikTok Live**.
 
@@ -112,6 +112,11 @@ respaldo (Edge TTS, Google o la voz de Windows) y te avisa en el chat.
 - **No aparece nada al elegir una voz Edge concreta** → Algunas voces del
   catálogo pueden no estar disponibles en el servicio; prueba con otra voz
   (por ejemplo, `es-AR-ElenaNeural` o `es-ES-AlvaroNeural`).
+- **No funcionan “siguiente”, “anterior” o “pausa”** → MyBot envía las teclas
+  multimedia de Windows al **reproductor activo**. Haz clic una vez en YouTube
+  Music o Spotify, comprueba que hay música sonando y usa los botones de prueba.
+  Si el reproductor está elevado (ejecutado como administrador) y MyBot no, Windows
+  puede bloquear la orden.
 - **El bot no conecta con el directo** → Verifica que el usuario esté
   transmitiendo en directo en ese momento y que el nombre o enlace sea correcto.
 - **La ventana no se abre o aparece en blanco** → MyBot necesita el componente
@@ -123,6 +128,123 @@ respaldo (Edge TTS, Google o la voz de Windows) y te avisa en el chat.
   **PATH**, o reinicia el equipo para refrescar las variables de entorno. Solo es
   necesario si ejecutas MyBot desde el código fuente; el instalador ya incluye
   su propio intérprete.
+
+---
+
+## 🛡️ Windows Defender / SmartScreen («Windows protegió su PC»)
+
+Si al abrir el instalador o `MyBot.exe` Windows muestra un aviso de **SmartScreen**
+o **Windows Defender** bloquea el archivo, normalmente **no es un virus**: es un
+falso positivo por reputación. Un ejecutable nuevo, sin firma digital y descargado
+de Internet tiene muy poca reputación para Microsoft, y los empaquetados con
+PyInstaller (intérprete de Python + cargador propio) se parecen a técnicas que usa
+malware para pasar desapercibido.
+
+**La solución definitiva es firmar digitalmente los binarios** con un certificado
+de firma de código (OV o, mejor, EV). Un certificado EV da reputación inmediata en
+SmartScreen; uno OV la va ganando con las descargas. El proyecto ya incluye el
+script de firma:
+
+```powershell
+# Certificado .pfx
+powershell -ExecutionPolicy Bypass -File tools\build_release.ps1 `
+  -PfxPath .\certificado.pfx -PfxPassword "TU_CLAVE"
+
+# Certificado EV en token USB/HSM (huella del certificado instalado)
+powershell -ExecutionPolicy Bypass -File tools\build_release.ps1 `
+  -CertThumbprint "AB12CD34..."
+```
+
+El script compila, firma `dist\MyBot\MyBot.exe` y el instalador, **verifica que la
+firma sea válida** y genera `tools\checksums.json`. La app, cuando detecta que su
+propio ejecutable está firmado, exige que las actualizaciones también lo estén.
+
+Otras medidas que ya aplica el proyecto para reducir falsos positivos:
+
+- Empaquetado **onedir** (no `onefile`) y **sin UPX**, que son los formatos que más
+  alarman a los antivirus.
+- Metadatos completos de versión y editor en `MyBot.exe` (`version_info.txt`).
+- Instalador con `CloseApplications=yes`, `SetupLogging=yes` y versión declarada.
+- Descarga de actualizaciones solo por HTTPS desde los hosts oficiales, con
+  **SHA-256 obligatorio** y comprobación de firma Authenticode.
+
+Si aun así Defender marca el archivo, envíalo a Microsoft para que corrijan el
+falso positivo:
+
+<https://www.microsoft.com/en-us/wdsi/filesubmission>
+
+> ⚠️ **No pidas a los usuarios que desactiven Windows Defender ni que añadan
+> exclusiones.** Eso reduce su seguridad y no escala. La firma digital es la única
+> solución que funciona para todos.
+
+### Si no puedes pagar un certificado
+
+No existe un certificado de firma de código **gratuito y de confianza pública**
+para software de código cerrado. Los certificados “gratis” que se anuncian suelen
+ser de prueba o autofirmados: Windows no confía en ellos y el aviso de SmartScreen
+sigue apareciendo. Opciones reales sin pagar:
+
+1. **SignPath Foundation** — firma gratuita para proyectos **open source**:
+   <https://signpath.org/>. Requiere repositorio público, licencia aprobada por
+   OSI y un proceso de build verificable. Es la opción gratuita más sólida.
+2. **Publicar el proyecto como open source** y solicitar el programa. Sin una
+   licencia OSI no se puede acceder a esta vía.
+3. **Microsoft Store** — no es gratis, pero Microsoft firma el paquete y elimina
+   SmartScreen. Es la alternativa de bajo coste para software cerrado.
+4. **Azure Artifact Signing** — servicio de pago; para personas físicas solo está
+   disponible en EE. UU. y Canadá. No es una opción gratuita.
+
+Mientras tanto, medidas gratuitas que reducen (pero no eliminan) el problema:
+enviar el falso positivo a Microsoft, distribuir en ZIP junto a los hashes, evitar
+UPX/onefile y, si se quiere probar otro empaquetado, evaluar Nuitka. Ninguna de
+estas medidas sustituye a una firma de confianza.
+
+### Probar la firma en tu equipo (autofirma, solo local)
+
+Para comprobar que el flujo de firma funciona, sin comprar un certificado:
+
+```powershell
+# Crea el certificado, lo marca como de confianza SOLO para tu usuario,
+# compila el .exe, lo firma, recompila el instalador y lo firma.
+powershell -ExecutionPolicy Bypass -File tools\self_sign_local.ps1 -TrustLocal
+```
+
+- `-TrustLocal` añade el certificado a `CurrentUser\Root` y
+  `CurrentUser\TrustedPublisher`. Eso hace que **tu usuario** confíe en cualquier
+  archivo firmado con esa clave. No lo uses en un equipo compartido.
+- Sin `-TrustLocal`, la firma se crea pero Windows la marca como no confiable.
+- `-NoTimestamp` evita consultar el servidor de timestamp si no hay Internet.
+- Para eliminar el certificado y la confianza local:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\self_sign_local.ps1 -Remove
+```
+
+> Esta autofirma **no sirve para distribuir**. En el PC de otra persona el aviso
+> de SmartScreen seguirá apareciendo hasta que el binario esté firmado por una
+> autoridad de confianza (SignPath Foundation, una CA OV/EV o Microsoft Store).
+
+### ¿Python es el problema? ¿Conviene cambiar de lenguaje?
+
+Python **no es el problema en sí**: el aviso lo provoca el binario empaquetado y
+sin firmar. Cambiar de lenguaje sin firmar el ejecutable mantiene el aviso de
+«editor desconocido» en SmartScreen, porque el problema es de reputación y firma,
+no del lenguaje.
+
+Dicho eso, si el proyecto crece y quieres reducir la superficie de falsos positivos
+y el tamaño del paquete, las alternativas nativas más razonables son:
+
+| Opción | Ventaja | Coste |
+|--------|---------|-------|
+| **C# / .NET 8 + WPF o WinUI 3** | Binario nativo de Windows, buen soporte de WebView2 y SAPI, menos heurísticas de «empaquetador» | Reescribir backend y lógica de TikTok/TTS |
+| **Rust + Tauri** | Reutilizas la interfaz web actual, binario pequeño y nativo | Reescribir backend; ecosistema TTS en español más limitado |
+| **Go + Wails** | Similar a Tauri, binario único | Reescribir backend y puente JS |
+| **C++ + Qt** | Control total y máximo rendimiento | Mucho más esfuerzo de desarrollo |
+
+Recomendación: **mantén Python a corto plazo y firma los binarios**. Si el producto
+se vuelve comercial y necesitas instalación silenciosa, actualizaciones gestionadas
+y cero avisos, la opción más directa es **C#/.NET + WPF/WinUI 3** con firma EV (o
+publicación en Microsoft Store, que firma Microsoft).
 
 ---
 
@@ -266,7 +388,7 @@ la app los detecta como voz personalizada aunque no estén en el catálogo.
 ## Cómo Iniciar MyBot
 
 ### Opción 1: Versión instalada (Recomendado)
-Ejecuta el instalador `MyBot_v1.3.1_Instalador.exe` y abre **MyBot** desde el menú
+Ejecuta el instalador `MyBot_v1.3.3_Instalador.exe` y abre **MyBot** desde el menú
 Inicio o el acceso directo del escritorio. No requiere Python ni Node.js: todo
 va empaquetado en el ejecutable.
 

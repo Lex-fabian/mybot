@@ -44,12 +44,12 @@
   --ios-shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
   --ios-shadow-lg: 0 10px 30px -4px rgba(0, 0, 0, 0.08);
 
-  /* Curvaturas Squircle */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
-  --radius-pill: 9999px;
+  /* Curvaturas elegantes y menos circulares */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-pill: 6px;
 
   /* Tipografía */
   --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -68,6 +68,7 @@
 
 body {
   font-family: var(--font-family);
+  font-size: 11.5px;
   background-color: var(--ios-bg);
   color: var(--ios-text-primary);
   line-height: 1.45;
@@ -174,7 +175,7 @@ body {
 }
 
 .splash-status-text {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--ios-text-tertiary);
   min-height: 18px;
@@ -186,17 +187,32 @@ body {
 .app-layout {
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  min-height: 100vh;
-  padding: 16px 16px 32px;
+  align-items: stretch;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
 }
 
 .app-window {
   width: 100%;
-  max-width: 720px;
+  max-width: 520px;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  overflow: hidden;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+.tab-contents {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* TARJETAS ESTILO iOS */
@@ -220,11 +236,13 @@ body {
   background-color: var(--ios-card-bg);
   border: 1px solid var(--ios-card-border);
   border-radius: var(--radius-lg);
-  padding: 12px 16px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-shadow: var(--ios-shadow-sm);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .header-left {
@@ -236,7 +254,7 @@ body {
 .app-icon-squircle {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 122, 255, 0.18);
   flex-shrink: 0;
@@ -285,7 +303,7 @@ body {
   gap: 6px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   transition: all var(--transition-fast);
 }
@@ -317,21 +335,24 @@ body {
 
 .connection-row {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: flex-end;
+  flex-wrap: wrap;
 }
 
 .input-with-label {
-  flex: 1;
+  flex: 1 1 180px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .input-with-label label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ios-text-secondary);
+  line-height: 1.1;
+  margin-bottom: 1px;
 }
 
 .input-wrapper {
@@ -340,7 +361,8 @@ body {
   background-color: var(--ios-input-bg);
   border: 1px solid var(--ios-input-border);
   border-radius: var(--radius-md);
-  padding: 0 12px;
+  padding: 0 10px;
+  height: 32px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -361,8 +383,8 @@ body {
   width: 100%;
   border: none;
   background: transparent;
-  padding: 9px 0;
-  font-size: 14px;
+  padding: 4px 0;
+  font-size: 13px;
   font-family: inherit;
   color: var(--ios-text-primary);
   outline: none;
@@ -380,11 +402,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 9px 18px;
+  padding: 6px 14px;
+  height: 32px;
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
@@ -442,7 +465,7 @@ body {
 
 .btn-sm {
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: 11px;
   border-radius: var(--radius-sm);
 }
 
@@ -512,42 +535,53 @@ body {
 }
 
 /* ==========================================================================
-   BARRA DE PESTAÑAS (SEGMENTED CONTROL iOS)
+   BARRA DE PESTAÑAS (UNDERLINE CON TEXTO NEGRO Y LÍNEA AZUL)
    ========================================================================== */
 .segmented-control {
   display: flex;
-  background-color: var(--ios-segmented-bg);
-  border-radius: var(--radius-md);
-  padding: 4px;
-  gap: 4px;
+  background: transparent;
+  border-bottom: 2px solid var(--ios-card-border);
+  border-radius: 0;
+  padding: 0;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.segmented-control::-webkit-scrollbar {
+  display: none;
 }
 
 .segment-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   padding: 8px 12px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--ios-text-secondary);
+  color: #000000;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  margin-bottom: -2px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .segment-btn:hover {
-  color: var(--ios-text-primary);
+  color: var(--ios-blue);
 }
 
 .segment-btn.active {
-  background-color: #FFFFFF;
+  background: transparent;
   color: var(--ios-blue);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border-bottom: 2px solid var(--ios-blue);
+  box-shadow: none;
 }
 
 /* ==========================================================================
@@ -555,11 +589,17 @@ body {
    ========================================================================== */
 .tab-pane {
   display: none;
+  height: 100%;
+  min-height: 0;
   animation: tabFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .tab-pane.active {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @keyframes tabFadeIn {
@@ -575,7 +615,18 @@ body {
   flex-direction: column;
   padding: 0;
   overflow: hidden;
-  height: 480px;
+  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Scroll interno para tarjetas de configuración (Voz, Donaciones, Bienvenidas, Filtros) */
+.tab-pane .settings-group.ios-card {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 14px;
 }
 
 .chat-feed {
@@ -594,7 +645,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 8px 14px;
-  border-radius: 16px 16px 16px 4px;
+  border-radius: 6px 6px 6px 2px;
   background-color: #FFFFFF;
   border: 1px solid var(--ios-subtle-border);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
@@ -607,14 +658,14 @@ body {
 }
 
 .bubble-user {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--ios-blue);
   margin-bottom: 2px;
 }
 
 .bubble-text {
-  font-size: 13px;
+  font-size: 11.5px;
   color: var(--ios-text-primary);
   word-break: break-word;
 }
@@ -649,7 +700,7 @@ body {
 }
 
 .donation-title {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #B45309;
 }
@@ -685,7 +736,7 @@ body {
   gap: 8px;
   box-shadow: 0 1px 6px rgba(34, 197, 94, 0.08);
   animation: bubblePop 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  font-size: 12px;
+  font-size: 11px;
   color: #166534;
 }
 
@@ -716,14 +767,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background-color: #FFFFFF;
   border-top: 1px solid var(--ios-card-border);
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .toolbar-left {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .queue-pill {
@@ -750,14 +804,14 @@ body {
 }
 
 .group-title {
-  font-size: 16px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--ios-text-primary);
   letter-spacing: -0.01em;
 }
 
 .sub-title {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--ios-text-secondary);
   margin-bottom: 8px;
@@ -765,8 +819,14 @@ body {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .form-field {
@@ -780,7 +840,7 @@ body {
 }
 
 .form-field label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ios-text-secondary);
 }
@@ -792,7 +852,7 @@ body {
   border-radius: var(--radius-md);
   padding: 9px 12px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 11.5px;
   color: var(--ios-text-primary);
   outline: none;
   transition: all var(--transition-fast);
@@ -846,13 +906,13 @@ body {
 }
 
 .slider-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--ios-text-primary);
 }
 
 .slider-badge {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--ios-blue);
   background-color: var(--ios-blue-light);
@@ -918,7 +978,7 @@ body {
 }
 
 .switch-title {
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--ios-text-primary);
 }
@@ -1002,7 +1062,7 @@ body {
 }
 
 .voice-model-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ios-text-secondary);
 }
 
@@ -1062,12 +1122,13 @@ body {
 
 .test-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .test-input {
-  flex: 1;
+  flex: 1 1 180px;
 }
 
 .test-status-row {
@@ -1104,7 +1165,7 @@ body {
 }
 
 .input-helper {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ios-text-secondary);
 }
 
@@ -1147,7 +1208,7 @@ body {
   color: #FFFFFF;
   padding: 9px 18px;
   border-radius: var(--radius-pill);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
   animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -1292,7 +1353,7 @@ body {
 }
 
 .modal-field label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--ios-text-secondary);
 }
@@ -1334,7 +1395,7 @@ body {
 }
 
 .font-bold { font-weight: 700; }
-.font-mono { font-family: monospace; font-size: 12px; }
+.font-mono { font-family: monospace; font-size: 11px; }
 
 .field-hint {
   font-size: 11px;
@@ -1391,14 +1452,14 @@ body {
 }
 
 .update-changelog h4 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--ios-text-primary);
 }
 
 .update-changelog ul {
   padding-left: 18px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ios-text-secondary);
   display: flex;
   flex-direction: column;
@@ -1469,7 +1530,7 @@ body {
 }
 
 .splash-creator {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--ios-text-secondary);
   margin-top: 2px;
   margin-bottom: 14px;
@@ -1491,7 +1552,7 @@ body {
   padding: 14px 20px;
   background-color: #FFFFFF;
   border-top: 1px solid var(--ios-border);
-  font-size: 12px;
+  font-size: 11px;
   margin-top: 20px;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
@@ -1527,3 +1588,491 @@ body {
 }
 
 
+
+
+/* ==========================================================================
+   TARJETA UNIFICADA (CABECERA + USUARIO)
+   ========================================================================== */
+.unified-header-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 2px 12px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ios-card-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.top-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: none;
+}
+
+.top-brand-row .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-icon-squircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.app-brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ios-blue);
+}
+
+.app-badge-version {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ios-blue);
+  background-color: var(--ios-blue-light);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.mt-2 {
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   BARRA DE PERSONALIZACIÓN Y TRANSPARENCIA DEL CHAT
+   ========================================================================== */
+.chat-customizer-bar {
+  display: none; /* Oculto en la vista principal */
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #F8FAFD;
+  border-bottom: 1px solid var(--ios-card-border);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Solo se muestra al separar el chat */
+body.is-popout .chat-customizer-bar {
+  display: flex !important;
+}
+
+.customizer-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ios-text-secondary);
+  font-weight: 600;
+}
+
+.customizer-val {
+  min-width: 30px;
+  font-size: 10.5px;
+  color: var(--ios-blue);
+  font-weight: 700;
+}
+
+.mini-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 70px;
+  height: 4px;
+  background: #D1D5DB;
+  border-radius: 2px;
+  outline: none;
+}
+
+.mini-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--ios-blue);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.btn-xs {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+}
+
+/* Burbujas de chat con bordes menos circulares */
+.chat-bubble {
+  border-radius: 6px 6px 6px 2px !important;
+}
+
+.welcome-bubble {
+  border-radius: 6px !important;
+}
+
+.donation-card {
+  border-radius: 6px !important;
+}
+
+.system-bubble {
+  border-radius: 6px !important;
+}
+
+/* Modo Popout / Desacoplado para OBS */
+body.is-popout {
+  background: transparent !important;
+}
+
+body.is-popout .app-layout {
+  padding: 0;
+}
+
+body.is-popout .app-window {
+  max-width: 100%;
+}
+
+body.is-popout .unified-header-card,
+body.is-popout .segmented-control,
+body.is-popout .desktop-footer {
+  display: none !important;
+}
+
+body.is-popout .chat-wrapper {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 100vh;
+}
+
+
+/* Botón solo icono minimalista de línea delgada */
+.btn-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--ios-card-border);
+  border-radius: var(--radius-sm);
+  color: var(--ios-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-icon-only:hover {
+  background: #F1F4F9;
+  color: var(--ios-blue);
+  border-color: var(--ios-blue);
+}
+
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 10px;
+  background-color: #FFFFFF;
+  border-top: 1px solid var(--ios-card-border);
+}
+
+
+/* Fila de 3 columnas: Motor, Voz, Ajuste Vocal */
+.voice-row-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 8px;
+}
+
+.voice-row-3col .form-field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voice-row-3col .form-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ios-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.voice-row-3col .ios-select {
+  padding: 6px 8px;
+  font-size: 11px;
+  height: 33px;
+  text-overflow: ellipsis;
+}
+
+
+/* Sección de usuario con línea arriba y abajo */
+.voice-username-section {
+  border-top: 1px solid var(--ios-card-border);
+  border-bottom: 1px solid var(--ios-card-border);
+  padding: 12px 0;
+  margin: 10px 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voice-username-section .ios-switch-row {
+  margin-bottom: 0;
+}
+
+.voice-username-section .form-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ios-text-secondary);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.voice-username-section .ios-input {
+  height: 32px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+}
+
+/* Sección de prueba sin tarjeta */
+.voice-test-section {
+  padding-top: 2px;
+}
+
+.voice-test-section .test-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.voice-test-section .test-input {
+  flex: 1;
+  height: 32px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+}
+
+.btn-compact {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 16px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+
+/* Secciones de donaciones delimitadas por línea y sin tarjeta */
+.donations-section-block {
+  border-top: 1px solid var(--ios-card-border);
+  padding-top: 12px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.donation-template-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.donation-template-composer .composer-input {
+  height: 32px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+}
+
+.composer-fixed-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 5px 8px;
+  background-color: var(--ios-input-bg);
+  border: 1px solid var(--ios-input-border);
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+}
+
+.fixed-badge {
+  background-color: #E2E8F0;
+  color: #1E293B;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.fixed-badge-sep {
+  color: var(--ios-text-secondary);
+  font-size: 11px;
+}
+
+/* Stepper compacto con menor altura */
+.stepper-input {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-step {
+  width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px !important;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+}
+
+.stepper-val {
+  width: 65px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 2px 6px !important;
+  font-size: 12.5px !important;
+  text-align: center;
+}
+
+
+/* Fila de 2 interruptores lado a lado (Activar avisos & Combo racha) */
+.switch-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.switch-compact {
+  padding: 8px 10px;
+  gap: 6px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--ios-card-border);
+  border-radius: var(--radius-sm);
+}
+
+.switch-compact .switch-text {
+  min-width: 0;
+}
+
+.switch-compact .switch-title {
+  font-size: 11.5px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--ios-text-primary);
+}
+
+.switch-compact .ios-switch {
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.switch-compact .ios-switch::before {
+  width: 16px;
+  height: 16px;
+  top: 2px;
+  left: 2px;
+}
+
+.switch-compact .ios-switch:checked::before {
+  transform: translateX(16px);
+}
+
+
+/* Fila unificada de sonido de alerta: switch + select + botón play azul */
+.sound-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sound-switch-item {
+  flex: 0 1 175px;
+  min-width: 135px;
+  padding: 5px 8px !important;
+  height: 32px !important;
+  margin-bottom: 0 !important;
+}
+
+.sound-switch-item .switch-title {
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sound-select-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.sound-select {
+  height: 32px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+}
+
+.btn-play-blue {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: var(--ios-blue) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer !important;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0 !important;
+}
+
+.btn-play-blue:hover {
+  opacity: 0.9;
+  transform: scale(1.04);
+}
+
+.btn-play-blue:active {
+  transform: scale(0.96);
+}
+
+
+.app-badge-version {
+  font-size: 10.5px !important;
+  font-weight: 500 !important;
+  color: var(--ios-text-secondary) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}

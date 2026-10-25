@@ -28,9 +28,11 @@ import audio_assets
 import mybot_backend as backend
 
 APP_NOMBRE = "MyBot"
-URL_LOCAL = f"http://127.0.0.1:{backend.PORT}"
-ANCHO, ALTO = 880, 940
-ANCHO_MIN, ALTO_MIN = 760, 820
+# El parámetro v cambia en cada arranque para que WebView2 no reutilice un
+# index.html antiguo de su caché persistente después de una actualización.
+URL_LOCAL = f"http://127.0.0.1:{backend.PORT}/?v={backend.ASSET_VERSION}"
+ANCHO, ALTO = 480, 780
+ANCHO_MIN, ALTO_MIN = 360, 480
 
 
 def _preparar_salidas_de_texto():
@@ -47,6 +49,13 @@ def _preparar_salidas_de_texto():
     for carpeta in (backend.BASE_DIR, tempfile.gettempdir()):
         try:
             ruta = os.path.join(carpeta, "mybot.log")
+            # Rotación simple: el registro no puede crecer sin límite durante
+            # directos de muchas horas.
+            try:
+                if os.path.getsize(ruta) > 2 * 1024 * 1024:
+                    os.replace(ruta, ruta + ".1")
+            except OSError:
+                pass
             destino = open(ruta, "a", encoding="utf-8", errors="replace")
             break
         except OSError:
@@ -91,7 +100,7 @@ class ApiPuente:
     def open_external(self, url: str) -> bool:
         """Abre un enlace http(s) en el navegador predeterminado del sistema."""
         destino = str(url or "").strip()
-        if destino.startswith(("http://", "https://")):
+        if len(destino) <= 2000 and destino.startswith(("http://", "https://")):
             webbrowser.open(destino)
             return True
         return False
@@ -100,7 +109,7 @@ class ApiPuente:
         return backend.APP_VERSION
 
     def ruta_descargas(self) -> str:
-        return os.path.join(backend.BASE_DIR, "assets", "descargas_audio")
+        return backend.DESCARGAS_DIR
 
     def cerrar_app(self) -> bool:
         """Cierra la aplicacion. La usa el actualizador: el instalador necesita
@@ -140,13 +149,24 @@ def _autoprueba(ventana) -> None:
             "document.getElementById('selectEngine')"
             " ? document.getElementById('selectEngine').value : 'AUSENTE'"
         )
-        resultado["opciones_voz"] = ventana.evaluate_js(
-            "document.getElementById('selectVoice')"
-            " ? document.getElementById('selectVoice').options.length : -1"
-        )
+        # La lista de voces llega por WebSocket. Se espera un poco para no
+        # confundir una carga lenta con un fallo real.
+        opciones = 0
+        for _ in range(24):
+            opciones = ventana.evaluate_js(
+                "document.getElementById('selectVoice')"
+                " ? document.getElementById('selectVoice').options.length : -1"
+            )
+            if opciones:
+                break
+            time.sleep(0.25)
+        resultado["opciones_voz"] = opciones
         resultado["websocket"] = ventana.evaluate_js(
             "document.getElementById('connStatusText')"
             " ? document.getElementById('connStatusText').textContent : 'AUSENTE'"
+        )
+        resultado["ws_estado"] = ventana.evaluate_js(
+            "document.body.dataset.ws ? document.body.dataset.ws : 'sin-conexion'"
         )
         resultado["puente_js"] = ventana.evaluate_js(
             "(window.pywebview && window.pywebview.api) ? 'disponible' : 'AUSENTE'"
@@ -155,7 +175,7 @@ def _autoprueba(ventana) -> None:
         resultado["error"] = str(exc)
     finally:
         try:
-            with open(os.path.join(backend.BASE_DIR, "mybot_selftest.json"), "w", encoding="utf-8") as f:
+            with open(os.path.join(backend.DATA_DIR, "mybot_selftest.json"), "w", encoding="utf-8") as f:
                 json.dump(resultado, f, ensure_ascii=False, indent=2)
         except OSError:
             pass
@@ -204,7 +224,13 @@ def main() -> int:
     if _esperar_servidor(timeout=0.6):
         print(f"[MyBot] Reutilizando la instancia activa en {URL_LOCAL}")
     else:
-        threading.Thread(target=backend.iniciar_servidor, daemon=True).start()
+        def _arrancar_backend():
+            try:
+                backend.iniciar_servidor()
+            except Exception as exc:  # noqa: BLE001
+                print(f"[MyBot] No se pudo iniciar el servidor: {exc}")
+
+        threading.Thread(target=_arrancar_backend, daemon=True).start()
         if not _esperar_servidor():
             webview.create_window(
                 APP_NOMBRE,
@@ -221,7 +247,7 @@ def main() -> int:
             return 1
 
     ventana = webview.create_window(
-        f"{APP_NOMBRE} - TikTok Live TTS & Donaciones Pro",
+        f"{APP_NOMBRE} - Un amigo para ti y tu comunidad",
         URL_LOCAL,
         width=ANCHO,
         height=ALTO,

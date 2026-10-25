@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import LogoParticleCanvas from './LogoParticleCanvas.vue'
 import {
   isDownloading as descargando,
   downloadPercent as progreso,
@@ -22,8 +21,10 @@ function handleDescarga() {
   <section class="hero-section">
     <div class="container hero-container">
       
-      <!-- LOGO DE PUNTOS ANIMADOS EN EL INICIO -->
-      <LogoParticleCanvas />
+      <!-- MARCA LIMPIA Y ESTÁTICA -->
+      <div class="hero-logo-mark">
+        <img src="/icono.png" alt="MyBot" />
+      </div>
 
       <!-- HEADER INTRO -->
       <div class="hero-badge-wrapper">
@@ -126,6 +127,26 @@ function handleDescarga() {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.hero-logo-mark {
+  width: 88px;
+  height: 88px;
+  margin: 10px auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border: 1px solid var(--ios-border);
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.hero-logo-mark img {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  display: block;
 }
 
 .hero-badge-wrapper {

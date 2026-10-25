@@ -19,23 +19,56 @@ import wave
 
 import sys
 
+def _es_directorio_escribible(carpeta: str) -> bool:
+    try:
+        os.makedirs(carpeta, exist_ok=True)
+        prueba = os.path.join(carpeta, f".test_{os.getpid()}")
+        with open(prueba, "w", encoding="utf-8") as f:
+            f.write("1")
+        os.remove(prueba)
+        return True
+    except OSError:
+        return False
+
+
 def obtener_dir_sonidos() -> str:
-    """Obtiene la ruta absoluta correcta de assets/sounds tanto en ejecutable como en código fuente."""
+    """Obtiene la ruta absoluta de assets/sounds. Si la carpeta del programa es de
+    solo lectura (p. ej. Program Files), redirige la escritura a LocalAppData."""
+    candidatos = []
     if getattr(sys, "frozen", False):
         meipass_sounds = os.path.join(getattr(sys, "_MEIPASS", ""), "assets", "sounds")
         if os.path.exists(meipass_sounds):
-            return meipass_sounds
+            candidatos.append(meipass_sounds)
         exe_sounds = os.path.join(os.path.dirname(sys.executable), "assets", "sounds")
         if os.path.exists(exe_sounds):
-            return exe_sounds
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "sounds")
+            candidatos.append(exe_sounds)
+    source_sounds = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "sounds")
+    candidatos.append(source_sounds)
+
+    for c in candidatos:
+        if os.path.exists(c) and _es_directorio_escribible(c):
+            return c
+
+    user_sounds = os.path.join(
+        os.environ.get("LOCALAPPDATA") or tempfile.gettempdir(), "MyBot", "assets", "sounds"
+    )
+    try:
+        os.makedirs(user_sounds, exist_ok=True)
+        return user_sounds
+    except OSError:
+        return source_sounds
 
 SOUNDS_DIR = obtener_dir_sonidos()
 
-# Bloqueo y registro de alias MCI activos para parada instantánea
+# Bloqueo y registro de alias MCI activos para parada instantánea.
+# Hay dos señales separadas: una alerta de donación no debe cancelar la voz que
+# se está reproduciendo, ni al revés.
 _mci_lock = threading.Lock()
 _active_mci_aliases = set()
-_abort_current_playback = threading.Event()
+_abort_tts = threading.Event()
+_abort_alertas = threading.Event()
+# Limita los hilos MCI simultáneos: una ráfaga de regalos ya no crea decenas.
+_alerta_sem = threading.BoundedSemaphore(2)
 
 
 def _asegurar_directorio():
@@ -118,10 +151,21 @@ def generar_sonidos_predeterminados():
         ("✨ Ding Brillante", "ding.wav"),
     ]
 
+    carpetas_busqueda = [s_dir]
+    if getattr(sys, "frozen", False):
+        exe_s = os.path.join(os.path.dirname(sys.executable), "assets", "sounds")
+        if exe_s not in carpetas_busqueda and os.path.exists(exe_s):
+            carpetas_busqueda.append(exe_s)
+    src_s = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "sounds")
+    if src_s not in carpetas_busqueda and os.path.exists(src_s):
+        carpetas_busqueda.append(src_s)
+
     for etiqueta, nombre_arch in sonidos_lista:
-        p = os.path.join(s_dir, nombre_arch)
-        if os.path.exists(p):
-            catalogo[etiqueta] = p
+        for carpeta in carpetas_busqueda:
+            p = os.path.join(carpeta, nombre_arch)
+            if os.path.exists(p):
+                catalogo[etiqueta] = p
+                break
 
     # Fallback si por algún motivo la carpeta de sonidos no tiene los archivos
     if not catalogo:
@@ -153,7 +197,8 @@ def detener_todo_el_audio():
     2. Detiene cualquier sonido WAV emitido por winsound.
     3. Señaliza al reproductor para no continuar con audios en espera.
     """
-    _abort_current_playback.set()
+    _abort_tts.set()
+    _abort_alertas.set()
 
     # Detener winsound
     try:
@@ -176,7 +221,32 @@ def detener_todo_el_audio():
             pass
 
 
-def reproducir_sonido_alerta(ruta_archivo: str):
+
+def reproducir_sonido_alerta_sincrono(ruta_archivo: str, volumen: int = 100):
+    """
+    Reproduce un sonido de alerta de forma síncrona (bloquea hasta que termine).
+    Garantiza que la alerta suene completa antes de que comience el agradecimiento por voz.
+    """
+    if not ruta_archivo or not os.path.exists(ruta_archivo):
+        return
+
+    _abort_alertas.clear()
+    ext = os.path.splitext(ruta_archivo)[1].lower()
+    if ext == ".wav":
+        try:
+            import winsound
+            winsound.PlaySound(ruta_archivo, winsound.SND_FILENAME)
+            return
+        except Exception as e:
+            print(f"[AudioAssets] Error winsound alerta sincrona: {e}")
+
+    try:
+        _reproducir_mci(ruta_archivo, True, _abort_alertas, volumen=volumen)
+    except Exception as e:
+        print(f"[AudioAssets] Error MCI alerta sincrona: {e}")
+
+
+def reproducir_sonido_alerta(ruta_archivo: str, volumen: int = 100):
     """
     Reproduce un sonido de alerta en segundo plano sin interrumpir la voz ni la UI.
     Soporta WAV nativamente mediante winsound y MP3 mediante MCI seguro.
@@ -184,7 +254,7 @@ def reproducir_sonido_alerta(ruta_archivo: str):
     if not ruta_archivo or not os.path.exists(ruta_archivo):
         return
 
-    _abort_current_playback.clear()
+    _abort_alertas.clear()
     ext = os.path.splitext(ruta_archivo)[1].lower()
     if ext == ".wav":
         try:
@@ -195,10 +265,20 @@ def reproducir_sonido_alerta(ruta_archivo: str):
             print(f"[AudioAssets] Error winsound: {e}")
 
     # Fallback para MP3 u otros formatos con MCI (esperar=True en hilo daemon para que suene completo)
-    threading.Thread(target=_reproducir_mci, args=(ruta_archivo, True), daemon=True).start()
+    if not _alerta_sem.acquire(blocking=False):
+        # Demasiadas alertas solapadas: se descarta esta para no crear hilos sin fin.
+        return
+
+    def _reproducir_alerta():
+        try:
+            _reproducir_mci(ruta_archivo, True, _abort_alertas, volumen=volumen)
+        finally:
+            _alerta_sem.release()
+
+    threading.Thread(target=_reproducir_alerta, daemon=True).start()
 
 
-def _reproducir_mci(ruta: str, esperar: bool = True):
+def _reproducir_mci(ruta: str, esperar: bool = True, aborto: threading.Event = None, volumen: int = 100):
     """
     Reproduce un archivo de audio con MCI asegurando alias único, registro
     para detención inmediata y cierre garantizado.
@@ -206,6 +286,7 @@ def _reproducir_mci(ruta: str, esperar: bool = True):
     if not os.path.exists(ruta):
         return
 
+    aborto = aborto or _abort_tts
     alias = f"mci_{uuid.uuid4().hex[:8]}"
     ruta_segura = obtener_ruta_corta(ruta)
     mci = ctypes.windll.winmm.mciSendStringW
@@ -218,20 +299,31 @@ def _reproducir_mci(ruta: str, esperar: bool = True):
         cmd_open = f'open "{ruta_segura}" type mpegvideo alias {alias}'
         res_open = mci(cmd_open, None, 0, None)
         if res_open != 0:
-            mci(f'open "{ruta_segura}" alias {alias}', None, 0, None)
-
-        if _abort_current_playback.is_set():
+            res_open = mci(f'open "{ruta_segura}" alias {alias}', None, 0, None)
+        if res_open != 0:
             return
+
+        if aborto.is_set():
+            return
+
+        if volumen is not None:
+            vol_val = max(0, min(1000, int(volumen * 10)))
+            mci(f"setaudio {alias} volume to {vol_val}", None, 0, None)
 
         cmd_play = f"play {alias}"
         mci(cmd_play, None, 0, None)
 
         if esperar:
             buf = ctypes.create_unicode_buffer(128)
-            while not _abort_current_playback.is_set():
+            inicio = time.monotonic()
+            while not aborto.is_set():
                 mci(f"status {alias} mode", buf, 128, None)
                 modo = buf.value.lower()
                 if modo not in ("playing", "seeking", ""):
+                    break
+                # Una alerta/clip nunca dura minutos: si MCI no responde, el hilo
+                # no debe quedarse vivo para siempre.
+                if time.monotonic() - inicio > 120:
                     break
                 time.sleep(0.04)
     except Exception as e:
@@ -246,13 +338,13 @@ def _reproducir_mci(ruta: str, esperar: bool = True):
             pass
 
 
-def reproducir_mp3_tts(ruta: str):
+def reproducir_mp3_tts(ruta: str, volumen: int = 100):
     """
     Reproduce de forma segura un archivo generado por TTS (para el hilo de voz).
     Si se solicita detener el audio, finaliza de inmediato.
     """
-    _abort_current_playback.clear()
-    _reproducir_mci(ruta, esperar=True)
+    _abort_tts.clear()
+    _reproducir_mci(ruta, esperar=True, aborto=_abort_tts, volumen=volumen)
 
 
 def reproducir_wav_tts(ruta: str):
@@ -263,7 +355,7 @@ def reproducir_wav_tts(ruta: str):
     if not ruta or not os.path.exists(ruta):
         return
 
-    _abort_current_playback.clear()
+    _abort_tts.clear()
     try:
         import winsound
 
@@ -272,4 +364,4 @@ def reproducir_wav_tts(ruta: str):
     except Exception as e:
         print(f"[AudioAssets] Error winsound (wav tts): {e}")
 
-    _reproducir_mci(ruta, esperar=True)
+    _reproducir_mci(ruta, esperar=True, aborto=_abort_tts)

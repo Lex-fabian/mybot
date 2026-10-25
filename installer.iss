@@ -1,5 +1,5 @@
 #define MyAppName "MyBot"
-#define MyAppVersion "1.3.1"
+#define MyAppVersion "1.3.3"
 #define MyAppPublisher "i.am.lex"
 #define MyAppURL "https://mybot-79861.web.app"
 #define MyAppExeName "MyBot.exe"
@@ -21,7 +21,7 @@ DisableProgramGroupPage=yes
 
 ; Configuración del instalador
 OutputDir=dist_installer
-OutputBaseFilename=MyBot_v1.3.1_Instalador
+OutputBaseFilename=MyBot_v1.3.3_Instalador
 SetupIconFile=assets\icono.ico
 WizardImageFile=assets\wizard_left.bmp
 WizardSmallImageFile=assets\wizard_small.bmp
@@ -29,15 +29,23 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 
+; Cierra la app durante la actualizacion para no dejar archivos bloqueados y
+; guarda un registro de instalacion para diagnosticar fallos.
+CloseApplications=yes
+RestartApplications=no
+SetupLogging=yes
+MinVersion=10.0
+
 ; Permisos e iconos
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=1.3.1.0
+UninstallDisplayName={#MyAppName} v{#MyAppVersion}
+VersionInfoVersion=1.3.3.0
 VersionInfoCompany={#MyAppPublisher}
-VersionInfoDescription=MyBot v1.3.1 - Lector de Comentarios y Donaciones TikTok Live
+VersionInfoDescription=MyBot v1.3.3 - Lector de Comentarios y Donaciones TikTok Live
 VersionInfoProductName=MyBot
-VersionInfoProductVersion=1.3.1.0
+VersionInfoProductVersion=1.3.3.0
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"

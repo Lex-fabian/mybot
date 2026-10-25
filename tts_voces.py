@@ -14,11 +14,14 @@
 
 import os
 import time
+import urllib.parse
 import urllib.request
 
-USER_AGENT = "MyBot-Desktop-App/1.3.0"
+USER_AGENT = "MyBot-Desktop-App/1.3.3"
 PIPER_BASE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main/es"
 BLOQUE = 256 * 1024
+MAX_MODELO_BYTES = 700 * 1024 * 1024
+HOSTS_MODELOS = {"huggingface.co", "hf.co"}
 
 # 'ruta' es la ruta dentro del repositorio; 'ruta': None => no descargable (alias).
 CATALOGO = [
@@ -52,19 +55,30 @@ def entrada(voz_id: str):
     return next((v for v in CATALOGO if v["id"] == voz_id), None)
 
 
-def archivo_modelo(directorio: str, voz_id: str) -> str:
-    return os.path.join(directorio, f"{voz_id}.onnx")
+def archivo_modelo(directorio: str, voz_id: str, fallback_dir: str = None) -> str:
+    principal = os.path.join(directorio, f"{voz_id}.onnx")
+    if os.path.exists(principal) and os.path.exists(principal + ".json"):
+        return principal
+    if fallback_dir:
+        secundario = os.path.join(fallback_dir, f"{voz_id}.onnx")
+        if os.path.exists(secundario) and os.path.exists(secundario + ".json"):
+            return secundario
+    return principal
 
 
-def instalada(directorio: str, voz_id: str) -> bool:
-    return bool(voz_id) and os.path.exists(archivo_modelo(directorio, voz_id))
+def instalada(directorio: str, voz_id: str, fallback_dir: str = None) -> bool:
+    """Una voz solo está completa si existen el modelo y su configuración."""
+    if not voz_id:
+        return False
+    modelo = archivo_modelo(directorio, voz_id, fallback_dir)
+    return os.path.exists(modelo) and os.path.exists(modelo + ".json")
 
 
 def url_modelo(voz: dict) -> str:
     return f"{PIPER_BASE_URL}/{voz['ruta']}/{voz['id']}.onnx"
 
 
-def catalogo(directorio: str) -> list:
+def catalogo(directorio: str, fallback_dir: str = None) -> list:
     """Catálogo completo con el estado de instalación de cada voz."""
     resultado = []
     for v in CATALOGO:
@@ -76,7 +90,7 @@ def catalogo(directorio: str) -> list:
             "calidad": v["calidad"],
             "mb": v["mb"],
             "descargable": descargable,
-            "instalada": instalada(directorio, base),
+            "instalada": instalada(directorio, base, fallback_dir),
         })
 
     # Modelos añadidos a mano por el usuario que no estén en el catálogo
@@ -92,9 +106,9 @@ def catalogo(directorio: str) -> list:
     return resultado
 
 
-def instaladas(directorio: str) -> list:
+def instaladas(directorio: str, fallback_dir: str = None) -> list:
     """Voces instaladas en el orden del catálogo: [(etiqueta, id), ...]."""
-    return [(v["etiqueta"], v["id"]) for v in catalogo(directorio) if v["instalada"]]
+    return [(v["etiqueta"], v["id"]) for v in catalogo(directorio, fallback_dir) if v["instalada"]]
 
 
 def esta_descargable(voz_id: str) -> bool:
@@ -128,6 +142,18 @@ def _descargar_archivo(url, destino, base_bytes, total_bytes, progreso, cancelad
     peticion = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(peticion, timeout=60) as respuesta, open(parcial, "wb") as salida:
+            # La descarga debe seguir viniendo del repositorio oficial, incluso
+            # después de las redirecciones de Hugging Face.
+            host_final = (urllib.parse.urlparse(respuesta.geturl()).hostname or "").lower()
+            if (host_final not in HOSTS_MODELOS
+                    and not host_final.endswith(".huggingface.co")
+                    and not host_final.endswith(".hf.co")):
+                raise RuntimeError("El servidor de voces redirigió a un origen no permitido.")
+
+            longitud = int(respuesta.headers.get("Content-Length", 0) or 0)
+            if longitud > MAX_MODELO_BYTES:
+                raise RuntimeError("El modelo de voz remoto es demasiado grande.")
+
             descargado = base_bytes
             inicio = time.time()
             ultimo_aviso = 0.0
@@ -139,8 +165,10 @@ def _descargar_archivo(url, destino, base_bytes, total_bytes, progreso, cancelad
                 bloque = respuesta.read(BLOQUE)
                 if not bloque:
                     break
-                salida.write(bloque)
                 descargado += len(bloque)
+                if descargado - base_bytes > MAX_MODELO_BYTES:
+                    raise RuntimeError("El modelo de voz supera el tamaño permitido.")
+                salida.write(bloque)
 
                 if progreso:
                     ahora = time.time()

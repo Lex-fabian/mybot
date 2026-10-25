@@ -1,14 +1,14 @@
 {
-  "version": "1.3.1",
-  "version_name": "v1.3.1",
+  "version": "1.3.3",
+  "version_name": "v1.3.3",
   "min_required_version": "1.0.0",
-  "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.1_Instalador.exe",
-  "sha256": "E3CB77657A850F845CBF6A9921D724B31167D30911B8906A42B20AAEEAC38AAA",
-  "size_bytes": 72428039,
+  "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.3_Instalador.exe",
+  "sha256": "DD7106CB524B55DFBF18AF2B5BAD60AA34C6B8749CA3F526BCD8850E36CB4A4E",
+  "size_bytes": 72440393,
   "checksums": {
-    "MyBot_v1.3.1_Instalador.exe": "E3CB77657A850F845CBF6A9921D724B31167D30911B8906A42B20AAEEAC38AAA"
+    "MyBot_v1.3.3_Instalador.exe": "DD7106CB524B55DFBF18AF2B5BAD60AA34C6B8749CA3F526BCD8850E36CB4A4E"
   },
-  "changelog": "Corregida la comprobación de actualizaciones: la consulta ahora la hace el backend y ya no la bloquea el navegador por CORS.\nAviso automático de nueva versión al arrancar, con las novedades de cada versión.\nOpcion 'Mas tarde' para posponer una actualización sin que vuelva a insistir.\nLa aplicación se cierra sola al lanzar el instalador para poder actualizarse.\nLa versión mostrada en la cabecera y el pie ya no esta fijada a mano.\nLos instaladores se publican en Cloud Storage, con lo que dejan de consumir la cuota del sitio.",
-  "release_date": "2026-10-14",
+  "changelog": "Corregido el control multimedia: siguiente canción, anterior y pausa/reanudar ahora usan SendInput con teclas extendidas de Windows.\nAñadido botón de prueba de pausa/reanudar en Voz & Presets.\nAviso de seguridad en la web sobre la alerta de Windows SmartScreen / Smart App Control.\nCorregida la caché de WebView2: tras una actualización ya no se reutiliza un app.js antiguo.\nEndurecimiento de seguridad: WebSocket local con token, validación de Host/Origin, actualizaciones solo HTTPS con SHA-256 y verificación de firma.\nMejoras de memoria y estabilidad: límites en colas y cachés, cierre ordenado del servidor y limpieza de temporales.\nLos modelos de voz Piper ahora verifican que exista el .onnx y su .onnx.json.",
+  "release_date": "2026-10-19",
   "author": "i.am.lex"
 }

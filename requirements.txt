@@ -5,7 +5,8 @@
 TikTokLive>=7.0.1       # Cliente del directo de TikTok
 
 # --- Servidor local de la aplicacion (HTTP + WebSocket) ---
-aiohttp>=3.9.0          # Sirve la interfaz y sincroniza el estado en tiempo real
+aiohttp>=3.9.5          # Sirve la interfaz y sincroniza el estado en tiempo real
+                        # (3.9.5 corrige CVEs de traversal/DoS de versiones anteriores)
 
 # --- Interfaz de escritorio ---
 pywebview>=5.0          # Ventana nativa con el motor WebView2 de Windows
@@ -21,3 +22,9 @@ pywin32>=306            # API nativa SAPI.SpVoice (necesaria para el motor SAPI5
 # --- Motores opcionales en la nube (Edge TTS se bloquea con error 403 en algunas redes) ---
 edge-tts>=6.0.0         # Voz neural "Edge TTS" (Microsoft), opcional
 gTTS>=2.5.0             # Voz alternativa online (Google), respaldo
+
+# Seguridad de dependencias:
+#   python -m pip install pip-audit
+#   python -m pip_audit -r requirements.txt
+# Para releases, genera un lock reproducible con:
+#   python -m pip freeze > requirements.lock.txt

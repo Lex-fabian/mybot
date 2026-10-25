@@ -6,11 +6,13 @@ __pycache__/
 !MyBot.spec
 build/
 dist/
+dist_installer/
 *.exe
 
 # Node (solo para la landing page de frontend-mybot)
 node_modules/
 npm-debug.log
+frontend-mybot/.firebase/
 
 # Voces neuronales: se descargan desde la app, no se versionan (varios cientos de MB)
 assets/voices/
@@ -20,6 +22,11 @@ assets/descargas_audio/
 frontend-mybot/public/downloads/
 frontend-mybot/dist/
 *_backup/
+
+# Certificados y claves privadas: NUNCA subir al repositorio
+*.pfx
+*.p12
+*.key
 
 # Environment / Temp
 .env

@@ -11,18 +11,24 @@ echo   MyBot - Lector de Comentarios y Donaciones TikTok Live
 echo ============================================================
 echo.
 
-REM --- Localizar un Python real (el alias de la Microsoft Store no sirve) ---
+REM --- 1. Localizar el ejecutable de Python real ---
 set "PYEXE="
-python -c "import sys; print(1)" >nul 2>nul
-if not errorlevel 1 set "PYEXE=python"
-if not defined PYEXE (
-  py -3 -c "import sys; print(1)" >nul 2>nul
-  if not errorlevel 1 set "PYEXE=py -3"
+if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
+  set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+) else if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" (
+  set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+) else if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
+  set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+) else if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
+  set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+) else if exist "%ProgramFiles%\Python312\python.exe" (
+  set "PYEXE=%ProgramFiles%\Python312\python.exe"
+) else if exist "%ProgramFiles%\Python311\python.exe" (
+  set "PYEXE=%ProgramFiles%\Python311\python.exe"
+) else (
+  where python >nul 2>nul
+  if not errorlevel 1 set "PYEXE=python"
 )
-if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
-if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
-if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
-if not defined PYEXE if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" set "PYEXE=%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
 
 if not defined PYEXE (
   echo [ERROR] No se encontro un Python 3.10 o superior funcional.
@@ -33,20 +39,29 @@ if not defined PYEXE (
   exit /b 1
 )
 
-echo Python detectado: %PYEXE%
+echo Python detectado: "%PYEXE%"
 echo.
 
-REM --- Dependencias de Python (solo en la primera ejecucion) ---
-%PYEXE% -c "import TikTokLive, aiohttp, webview" >nul 2>nul
+REM --- 2. Verificar dependencias principales ---
+"%PYEXE%" -c "import TikTokLive, aiohttp, webview" >nul 2>nul
 if errorlevel 1 (
-  echo Instalando dependencias de Python ^(primera ejecucion^)...
-  %PYEXE% -m pip install -r requirements.txt
+  echo Instalando dependencias necesarias con pip...
+  "%PYEXE%" -m pip install -r requirements.txt
   if errorlevel 1 (
+    echo.
     echo [ERROR] Fallo al instalar las dependencias de Python.
+    echo Revisa tu conexion a Internet o permisos de usuario.
+    echo.
     pause
     exit /b 1
   )
 )
 
+REM --- 3. Arrancar la aplicacion de escritorio ---
 echo Iniciando MyBot...
-%PYEXE% mybot_app.py
+"%PYEXE%" mybot_app.py
+if errorlevel 1 (
+  echo.
+  echo [Aviso] La aplicacion se ha cerrado.
+  pause
+)

@@ -73,14 +73,37 @@ function Invoke-Sign {
     return $true
 }
 
+$signTool = Get-SignTool
+# PyInstaller se compila en modo "onedir": el ejecutable real esta en
+# dist\MyBot\MyBot.exe (la ruta antigua dist\MyBot.exe no existe).
+$exeBin = "dist\MyBot\MyBot.exe"
+$firmados = 0
+
 # ---------------------------------------------------------------------------
-# 1) Compilacion
+# 1) Compilacion del ejecutable
 # ---------------------------------------------------------------------------
 if (-not $SkipBuild) {
     Write-Host "== Compilando ejecutable con PyInstaller =="
     python -m PyInstaller --noconfirm MyBot.spec
     if ($LASTEXITCODE -ne 0) { throw "Fallo PyInstaller." }
+}
 
+# ---------------------------------------------------------------------------
+# 2) Firma del ejecutable (ANTES de crear el instalador)
+# ---------------------------------------------------------------------------
+# El instalador empaqueta una copia de dist\MyBot\*. Si se firmara despues de
+# crearlo, el instalador seguiria llevando el MyBot.exe SIN firmar dentro.
+if (Test-Path $exeBin) {
+    Write-Host "== Firmando ejecutable =="
+    if (Invoke-Sign -Ruta (Resolve-Path $exeBin).Path -SignTool $signTool) { $firmados++ }
+} else {
+    throw "No se encontro '$exeBin'. Ejecuta sin -SkipBuild."
+}
+
+# ---------------------------------------------------------------------------
+# 3) Compilacion del instalador (ya contiene el ejecutable firmado)
+# ---------------------------------------------------------------------------
+if (-not $SkipBuild) {
     $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source
     if (-not $iscc) {
         $iscc = @(
@@ -98,25 +121,32 @@ if (-not $SkipBuild) {
 }
 
 # ---------------------------------------------------------------------------
-# 2) Firma
+# 4) Firma del instalador
 # ---------------------------------------------------------------------------
-$signTool = Get-SignTool
-$binarios = @("dist\MyBot.exe")
-
-# El instalador lleva la version en el nombre (MyBot_v1.2_Instalador.exe): firmamos el mas reciente.
+$binarios = @($exeBin)
+# El instalador lleva la version en el nombre (MyBot_v1.3.1_Instalador.exe):
+# firmamos el mas reciente.
 $ultimoInstalador = Get-ChildItem "dist_installer\MyBot_v*_Instalador.exe" -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if ($ultimoInstalador) { $binarios += $ultimoInstalador.FullName }
+if ($ultimoInstalador) {
+    Write-Host "== Firmando instalador =="
+    if (Invoke-Sign -Ruta $ultimoInstalador.FullName -SignTool $signTool) { $firmados++ }
+    $binarios += $ultimoInstalador.FullName
+}
 
-$binarios = $binarios | Where-Object { Test-Path $_ }
-
-if ($binarios.Count -eq 0) { throw "No se encontraron binarios para firmar. Ejecuta sin -SkipBuild." }
-
-Write-Host "== Firmando binarios =="
-foreach ($b in $binarios) { Invoke-Sign -Ruta (Resolve-Path $b).Path -SignTool $signTool }
+if ($firmados -gt 0) {
+    Write-Host "== Verificando firmas =="
+    foreach ($b in $binarios) {
+        $firma = Get-AuthenticodeSignature -LiteralPath (Resolve-Path $b).Path
+        if ($firma.Status -ne "Valid") {
+            throw "La firma de '$b' no es valida (estado: $($firma.Status))."
+        }
+        Write-Host "  Firma valida: $b" -ForegroundColor Green
+    }
+}
 
 # ---------------------------------------------------------------------------
-# 3) Checksums SHA-256
+# 5) Checksums SHA-256
 # ---------------------------------------------------------------------------
 Write-Host "== Calculando checksums SHA-256 =="
 $checksums = [ordered]@{}

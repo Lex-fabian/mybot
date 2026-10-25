@@ -1,9 +1,9 @@
 {
-  "usuario": "@l.am.lex_",
+  "usuario": "l.am.lex_",
   "motor": "piper",
-  "voz_nombre": "🇦🇷 Daniela - Mujer (Argentina, offline)",
+  "voz_nombre": "🇦🇷 Daniela - Mujer (Argentina)",
   "voz_id": "es_AR-daniela-high",
-  "tono": 45,
+  "tono": 38,
   "velocidad": 0,
   "volumen": 100,
   "leer_nombre": false,
@@ -31,15 +31,10 @@
   "anti_repeticion_bienvenida": true,
   "ignorar_comentarios_repetidos": true,
   "tiempo_anti_repeticion": 45,
-  "accion_multimedia_activa": false,
+  "accion_multimedia_activa": true,
   "tipo_accion_multimedia": "next",
   "min_diamantes_multimedia": 1,
   "aceleracion_dinamica": true,
   "ttl_comentarios_cola": 20,
-  "limpiar_nombres_usuarios": true,
-  "baneadas_lista": [
-    "ejemplo1",
-    "ejemplo2",
-    "ejemplo3"
-  ]
+  "limpiar_nombres_usuarios": true
 }
