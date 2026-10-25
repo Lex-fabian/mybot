@@ -7,6 +7,7 @@ import {
   iniciarDescargaGlobal as iniciarDescarga
 } from '../utils/downloader'
 import { APP_VERSION_NAME } from '../version'
+import LogoParticleCanvas from './LogoParticleCanvas.vue'
 
 defineEmits<{
   (e: 'open-binance'): void
@@ -21,10 +22,8 @@ function handleDescarga() {
   <section class="hero-section">
     <div class="container hero-container">
       
-      <!-- MARCA LIMPIA Y ESTÁTICA -->
-      <div class="hero-logo-mark">
-        <img src="/icono.png" alt="MyBot" />
-      </div>
+      <!-- LOGO INTERACTIVO DIBUJADO CON PARTÍCULAS -->
+      <LogoParticleCanvas />
 
       <!-- HEADER INTRO -->
       <div class="hero-badge-wrapper">
@@ -38,10 +37,10 @@ function handleDescarga() {
       </h1>
 
       <p class="hero-subtitle">
-        Lectura de comentarios y alertas de regalos en tiempo real con voces neurales ultra realistas. Rápido, ligero y elegante.
+        Un amigo para ti y tu comunidad
       </p>
 
-      <!-- BOTONES DE ACCIÓN -->
+      <!-- BOTONES DE ACCIÓN (SOLO DESCARGAR MYBOT CON ÍCONO DE WINDOWS) -->
       <div class="hero-cta-group" id="descarga">
         <button
           type="button"
@@ -50,12 +49,12 @@ function handleDescarga() {
           :disabled="descargando"
           @click="handleDescarga"
         >
-          <i v-if="!descargando && !completado" class="fa-brands fa-windows" style="font-size: 18px;"></i>
-          <i v-else-if="descargando" class="fa-solid fa-spinner fa-spin" style="font-size: 18px;"></i>
-          <i v-else class="fa-solid fa-check" style="font-size: 18px;"></i>
+          <i v-if="!descargando && !completado" class="fa-brands fa-windows" style="font-size: 19px;"></i>
+          <i v-else-if="descargando" class="fa-solid fa-spinner fa-spin" style="font-size: 19px;"></i>
+          <i v-else class="fa-solid fa-check" style="font-size: 19px;"></i>
 
           <div class="download-btn-text">
-            <span v-if="!descargando && !completado">Descargar Instalador para Windows</span>
+            <span v-if="!descargando && !completado">Descargar MyBot</span>
             <span v-else-if="descargando">Descargando MyBot... {{ progreso }}%</span>
             <span v-else>¡Descarga finalizada!</span>
             <small v-if="descargando || completado" class="download-subtext">{{ detalleDescarga }}</small>
@@ -63,11 +62,6 @@ function handleDescarga() {
 
           <!-- Barra de progreso visual in-button -->
           <div v-if="descargando" class="btn-progress-bar" :style="{ width: progreso + '%' }"></div>
-        </button>
-
-        <button class="btn btn-binance btn-lg" @click="$emit('open-binance')">
-          <i class="fa-solid fa-heart"></i>
-          <span>Donar</span>
         </button>
       </div>
 

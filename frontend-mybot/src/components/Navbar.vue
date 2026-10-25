@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { isDownloading, downloadPercent, isCompleted, iniciarDescargaGlobal } from '../utils/downloader'
 import { APP_VERSION_NAME } from '../version'
 
 defineEmits<{
   (e: 'open-binance'): void
 }>()
+
+function handleLogin() {
+  alert('El panel de inicio de sesión de MyBot estará disponible muy pronto.')
+}
 </script>
 
 <template>
@@ -25,28 +28,13 @@ defineEmits<{
       </nav>
 
       <div class="nav-actions">
-        <button class="btn btn-binance btn-sm" @click="$emit('open-binance')">
-          <i class="fa-solid fa-heart"></i>
-          <span>Donar</span>
-        </button>
         <button
           type="button"
-          class="btn btn-primary btn-sm btn-nav-download"
-          :class="{ 'btn-loading': isDownloading, 'btn-done': isCompleted }"
-          :disabled="isDownloading"
-          @click="iniciarDescargaGlobal()"
+          class="btn btn-primary btn-sm btn-login"
+          @click="handleLogin"
         >
-          <i v-if="!isDownloading && !isCompleted" class="fa-solid fa-download"></i>
-          <i v-else-if="isDownloading" class="fa-solid fa-spinner fa-spin"></i>
-          <i v-else class="fa-solid fa-check"></i>
-          <span class="btn-nav-text">
-            {{ isDownloading ? `Descargando: ${downloadPercent}%` : (isCompleted ? '¡Listo!' : 'Descargar') }}
-          </span>
-          <div
-            v-if="isDownloading"
-            class="nav-progress-fill"
-            :style="{ width: downloadPercent + '%' }"
-          ></div>
+          <i class="fa-solid fa-user"></i>
+          <span>Iniciar Sesión</span>
         </button>
       </div>
     </div>
