@@ -25,13 +25,6 @@ function handleDescarga() {
       <!-- LOGO INTERACTIVO DIBUJADO CON PARTÍCULAS -->
       <LogoParticleCanvas />
 
-      <!-- HEADER INTRO -->
-      <div class="hero-badge-wrapper">
-        <span class="badge badge-celeste">
-          <span>MyBot {{ APP_VERSION_NAME }} • Desarrollado por i.am.lex</span>
-        </span>
-      </div>
-
       <h1 class="hero-title">
         La voz de tu directo en <span class="text-gradient">TikTok Live</span>
       </h1>
@@ -164,12 +157,13 @@ function handleDescarga() {
 }
 
 .hero-subtitle {
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--ios-text-secondary);
-  max-width: 580px;
-  line-height: 1.5;
-  margin-bottom: 22px;
+  font-size: 21px;
+  font-weight: 600;
+  color: #334155;
+  max-width: 600px;
+  line-height: 1.4;
+  margin-bottom: 24px;
+  letter-spacing: -0.01em;
 }
 
 .hero-cta-group {
