@@ -2029,10 +2029,11 @@ service = None
 # iframe y bloquear el uso de plugins/objetos.
 CSP = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline'; "
+    "script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; "
     "style-src 'self' 'unsafe-inline'; "
-    "img-src 'self' data:; "
-    "connect-src 'self' ws://127.0.0.1:* ws://localhost:* ws://[::1]:*; "
+    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; "
+    "connect-src 'self' ws://127.0.0.1:* ws://localhost:* ws://[::1]:* https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; "
+    "frame-src https://*.firebaseapp.com https://accounts.google.com; "
     "frame-ancestors 'none'; "
     "object-src 'none'; "
     "base-uri 'self'"
@@ -2107,7 +2108,19 @@ async def ws_handler(request):
                     continue
                 action = data.get("action")
 
-                if action == "connect":
+                if action == "login_browser":
+                    url_login = f"http://localhost:{PORT}/login"
+                    threading.Thread(target=lambda: webbrowser.open(url_login), daemon=True).start()
+                    await ws.send_str(json.dumps({"type": "toast", "data": {"message": "Abriendo inicio de sesión en tu navegador..."}}))
+
+                elif action == "logout":
+                    service.cfg["auth_user"] = None
+                    service._guardar_configuracion()
+                    service.desconectar_tiktok()
+                    service.emit_ws("auth_state", {"logged_in": False, "user": None})
+                    service.emit_ws("toast", {"message": "Sesión cerrada correctamente"})
+
+                elif action == "connect":
                     service.conectar_tiktok(str(data.get("user", ""))[:200])
 
                 elif action == "disconnect":
@@ -2318,16 +2331,29 @@ async def login_page_handler(request):
     return web.Response(text="Página de inicio de sesión no encontrada.", status=404)
 
 
+_CORS_AUTH_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Private-Network": "true",
+}
+
+
+async def auth_session_options_handler(request):
+    """Preflight CORS y Private Network Access para sincronización desde la web."""
+    return web.Response(status=204, headers=_CORS_AUTH_HEADERS)
+
+
 async def auth_session_handler(request):
     """Recibe la sesión validada desde Firebase Auth."""
     try:
         body = await request.json()
     except Exception:
-        return web.json_response({"ok": False, "error": "JSON inválido"}, status=400)
+        return web.json_response({"ok": False, "error": "JSON inválido"}, status=400, headers=_CORS_AUTH_HEADERS)
 
     uid = str(body.get("uid", "")).strip()
     if not uid:
-        return web.json_response({"ok": False, "error": "UID requerido"}, status=400)
+        return web.json_response({"ok": False, "error": "UID requerido"}, status=400, headers=_CORS_AUTH_HEADERS)
 
     auth_data = {
         "uid": uid[:128],
@@ -2335,19 +2361,22 @@ async def auth_session_handler(request):
         "displayName": str(body.get("displayName", ""))[:150],
         "photoURL": str(body.get("photoURL", ""))[:500],
     }
+    anterior = service.cfg.get("auth_user")
+    es_nuevo_login = not anterior or anterior.get("uid") != auth_data["uid"]
     service.cfg["auth_user"] = auth_data
     service._guardar_configuracion()
 
     # Notificar a los clientes conectados por WebSocket
     service.emit_ws("auth_state", {"logged_in": True, "user": auth_data})
-    nombre_mostrar = auth_data.get("displayName") or auth_data.get("email") or "Usuario"
-    service.emit_ws("toast", {"message": f"¡Bienvenido, {nombre_mostrar}!"})
-    return web.json_response({"ok": True, "user": auth_data})
+    if es_nuevo_login:
+        nombre_mostrar = auth_data.get("displayName") or auth_data.get("email") or "Usuario"
+        service.emit_ws("toast", {"message": f"¡Bienvenido, {nombre_mostrar}!"})
+    return web.json_response({"ok": True, "user": auth_data}, headers=_CORS_AUTH_HEADERS)
 
 
 async def auth_open_browser_handler(request):
     """Abre el navegador por defecto para iniciar sesión con Google."""
-    url_login = f"http://127.0.0.1:{PORT}/login"
+    url_login = f"http://localhost:{PORT}/login"
     threading.Thread(target=lambda: webbrowser.open(url_login), daemon=True).start()
     return web.json_response({"ok": True, "url": url_login})
 
@@ -2378,6 +2407,7 @@ def iniciar_servidor(bloquear: bool = True):
     app.router.add_get("/", index_handler)
     app.router.add_get("/index.html", index_handler)
     app.router.add_get("/login", login_page_handler)
+    app.router.add_options("/api/auth/session", auth_session_options_handler)
     app.router.add_post("/api/auth/session", auth_session_handler)
     app.router.add_get("/api/auth/open-browser", auth_open_browser_handler)
     app.router.add_get("/api/health", health_handler)

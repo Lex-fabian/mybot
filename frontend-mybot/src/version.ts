@@ -17,8 +17,8 @@ export const APP_VERSION = '1.3.3'
 export const APP_VERSION_NAME = 'v1.3.3'
 
 /** SHA-256 y tamano exactos del instalador publicado en Storage. */
-export const INSTALLER_SHA256 = 'D28530E1C4EF20F899604209BE41FC48F5864AD40FA2FFEEF13EFF3617386F26'
-export const INSTALLER_SIZE_BYTES = 160521546
+export const INSTALLER_SHA256 = '20B5DDCFBA8996272E59C3D019C17014018AB37D40A729ECA01A714B60073342'
+export const INSTALLER_SIZE_BYTES = 36614120
 
 /**
  * Los instaladores se publican en Cloud Storage for Firebase y no en Hosting.
@@ -38,4 +38,4 @@ export const INSTALLER_FILE = `MyBot_${APP_VERSION_NAME}_Instalador.exe`
 export const INSTALLER_URL = `https://storage.googleapis.com/${STORAGE_BUCKET}/${INSTALLER_FOLDER}/${INSTALLER_FILE}`
 
 /** Tamano aproximado en MB, usado solo si el servidor no envia Content-Length. */
-export const INSTALLER_SIZE_MB = 153.1
+export const INSTALLER_SIZE_MB = 34.9

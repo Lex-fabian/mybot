@@ -185,9 +185,10 @@ def _autoprueba(ventana) -> None:
 
 
 def _carpeta_datos_app() -> str:
-    """Carpeta de datos del usuario (perfil de WebView2, registros, etc.)."""
+    """Carpeta de datos del usuario (perfil de WebView2 aislado por ejecutable)."""
     base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
-    carpeta = os.path.join(base, "MyBot")
+    sub = "webview_v2" if getattr(sys, "frozen", False) else "webview_dev"
+    carpeta = os.path.join(base, "MyBot", sub)
     try:
         os.makedirs(carpeta, exist_ok=True)
         return carpeta

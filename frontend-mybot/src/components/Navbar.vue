@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { APP_VERSION_NAME } from '../version'
 import { auth, loginWithGoogle, logoutFirebase, onAuthStateChanged, type User } from '../utils/firebase'
 
@@ -10,11 +10,46 @@ defineEmits<{
 const currentUser = ref<User | null>(null)
 const isLoggingIn = ref(false)
 const showUserMenu = ref(false)
+let syncInterval: number | null = null
+
+async function sincronizarConAppEscritorio(user: User | null) {
+  if (!user) return
+  const payload = {
+    uid: user.uid,
+    email: user.email || '',
+    displayName: user.displayName || user.email?.split('@')[0] || 'Usuario',
+    photoURL: user.photoURL || ''
+  }
+  try {
+    await fetch('http://127.0.0.1:58421/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+  } catch {
+    // App de escritorio cerrada; se ignora silenciosamente
+  }
+}
 
 onMounted(() => {
   onAuthStateChanged(auth, (user) => {
     currentUser.value = user
+    if (user) {
+      sincronizarConAppEscritorio(user)
+    }
   })
+
+  syncInterval = window.setInterval(() => {
+    if (currentUser.value) {
+      sincronizarConAppEscritorio(currentUser.value)
+    }
+  }, 4000)
+})
+
+onUnmounted(() => {
+  if (syncInterval) {
+    clearInterval(syncInterval)
+  }
 })
 
 async function handleLogin() {

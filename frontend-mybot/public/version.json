@@ -3,10 +3,10 @@
   "version_name": "v1.3.3",
   "min_required_version": "1.0.0",
   "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.3_Instalador.exe",
-  "sha256": "D28530E1C4EF20F899604209BE41FC48F5864AD40FA2FFEEF13EFF3617386F26",
-  "size_bytes": 160521546,
+  "sha256": "20B5DDCFBA8996272E59C3D019C17014018AB37D40A729ECA01A714B60073342",
+  "size_bytes": 36614120,
   "checksums": {
-    "MyBot_v1.3.3_Instalador.exe": "D28530E1C4EF20F899604209BE41FC48F5864AD40FA2FFEEF13EFF3617386F26"
+    "MyBot_v1.3.3_Instalador.exe": "20B5DDCFBA8996272E59C3D019C17014018AB37D40A729ECA01A714B60073342"
   },
   "changelog": "Integración de autenticación de Google con Firebase.\nNueva interfaz moderna y unificada estilo iOS.\nCorrección de secuencia de audio en donaciones (sonido primero, voz después).\nMejoras de rendimiento y estabilidad.",
   "release_date": "2026-10-25",
