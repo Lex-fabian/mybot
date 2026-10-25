@@ -3,12 +3,12 @@
   "version_name": "v1.3.3",
   "min_required_version": "1.0.0",
   "download_url": "https://storage.googleapis.com/mybot-79861.firebasestorage.app/instaladores/MyBot_v1.3.3_Instalador.exe",
-  "sha256": "DD7106CB524B55DFBF18AF2B5BAD60AA34C6B8749CA3F526BCD8850E36CB4A4E",
-  "size_bytes": 72440393,
+  "sha256": "D28530E1C4EF20F899604209BE41FC48F5864AD40FA2FFEEF13EFF3617386F26",
+  "size_bytes": 160521546,
   "checksums": {
-    "MyBot_v1.3.3_Instalador.exe": "DD7106CB524B55DFBF18AF2B5BAD60AA34C6B8749CA3F526BCD8850E36CB4A4E"
+    "MyBot_v1.3.3_Instalador.exe": "D28530E1C4EF20F899604209BE41FC48F5864AD40FA2FFEEF13EFF3617386F26"
   },
-  "changelog": "Corregido el control multimedia: siguiente canción, anterior y pausa/reanudar ahora usan SendInput con teclas extendidas de Windows.\nAñadido botón de prueba de pausa/reanudar en Voz & Presets.\nAviso de seguridad en la web sobre la alerta de Windows SmartScreen / Smart App Control.\nCorregida la caché de WebView2: tras una actualización ya no se reutiliza un app.js antiguo.\nEndurecimiento de seguridad: WebSocket local con token, validación de Host/Origin, actualizaciones solo HTTPS con SHA-256 y verificación de firma.\nMejoras de memoria y estabilidad: límites en colas y cachés, cierre ordenado del servidor y limpieza de temporales.\nLos modelos de voz Piper ahora verifican que exista el .onnx y su .onnx.json.",
-  "release_date": "2026-10-19",
+  "changelog": "Integración de autenticación de Google con Firebase.\nNueva interfaz moderna y unificada estilo iOS.\nCorrección de secuencia de audio en donaciones (sonido primero, voz después).\nMejoras de rendimiento y estabilidad.",
+  "release_date": "2026-10-25",
   "author": "i.am.lex"
 }
